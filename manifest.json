@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "kempt",
+  "short_name": "kempt",
+  "description": "Hide music, Mixes and Shorts from YouTube, tell it to stop sending them, and browse what Hacker News recommends instead.",
+  "version": "0.8.0",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_icon": "icons/icon-128.png",
+    "default_popup": "popup.html",
+    "default_title": "kempt"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.youtube.com/*"
+      ],
+      "css": [
+        "css/content.css",
+        "css/guide.css"
+      ],
+      "js": [
+        "js/content.js",
+        "js/guide.js",
+        "js/ytmenu.js",
+        "js/tell.js",
+        "js/history.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "service_worker": "js/background.js"
+  }
+}

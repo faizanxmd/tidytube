@@ -1,0 +1,113 @@
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  src: url("../fonts/inter.ttf") format("truetype");
+}
+
+:root {
+  --base: #0e1014;
+  --raised: #181b21;
+  --overlay: #262a32;
+  --overlay-hover: #2e333c;
+  --ink: #f4f5f8;
+  --muted: #a4a8b0;
+  --accent: #0f1e66;
+  --accent-hover: #142680;
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 280px;
+  margin: 0;
+  padding: 20px;
+  background: var(--base);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+h2.gap { margin-top: 24px; }
+
+/* toggles: a whole row is the switch; navy when on */
+.tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  background: var(--overlay);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  user-select: none;
+}
+.tile + .tile { margin-top: 8px; }
+.tile:hover { background: var(--overlay-hover); }
+.tile:has(input:checked) { background: var(--accent); }
+.tile:has(input:checked):hover { background: var(--accent-hover); }
+.tile:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.tile input { position: absolute; opacity: 0; pointer-events: none; }
+
+.state { color: var(--muted); font-size: 13px; font-weight: 500; }
+.state::after { content: "Off"; }
+input:checked ~ .state { color: var(--ink); }
+input:checked ~ .state::after { content: "On"; }
+
+/* the one action: outlined, centred, so it can't be mistaken for a toggle */
+.action {
+  display: block;
+  width: 100%;
+  height: 40px;
+  margin-top: 8px;
+  border: 1px solid var(--overlay);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.action::after { content: " →"; color: var(--muted); font-weight: 500; }
+.action:hover { background: var(--raised); border-color: var(--overlay-hover); }
+
+.note {
+  margin: 10px 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 17px;
+}
+.note button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.note button:hover { text-decoration: underline; }
+
+.action:focus-visible,
+.note button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.note button:focus-visible { border-radius: 2px; outline-offset: 1px; }

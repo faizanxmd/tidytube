@@ -1,0 +1,65 @@
+/*
+ * kempt — HN video subpage design tokens
+ * Source of truth: Paper file "Hackertube++" (Mockup page).
+ * Exported from Paper tokens; semantic aliases at the bottom are additions
+ * that name how the mockup actually uses the base tokens.
+ *
+ * Scoped to .kempt-hn so nothing leaks into YouTube's own styles.
+ */
+
+.kempt-hn {
+  /* ── Color (dark, "instrument black × amber LED") ── */
+  --color-bg: #0E0E0F;        /* page ground */
+  --color-surface: #18181A;   /* inputs, search bar */
+  --color-raised: #232326;    /* inactive pills, hovered rows */
+  --color-line: #2C2C30;      /* hairlines, borders, popover ground */
+  --color-text: #F3F3F1;      /* primary text */
+  --color-muted: #A6A6AB;     /* secondary text, counts, icons */
+  --color-accent: #FF8A1F;    /* HN points, active filter, focus — use sparingly */
+
+  /* ── Typography ── */
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+
+  --tracking-tight: -0.01em;
+  --tracking-label: 0.08em;
+
+  /* ── Spacing ── */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+
+  /* ── Radius ── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+
+  /* ── Semantic aliases (how the mockup uses the base tokens) ── */
+  --color-popover: var(--color-line);
+  --color-popover-footer: var(--color-bg);
+  --color-popover-divider: #3A3A3F;   /* hairlines inside the popover (popover ground is --color-line) */
+  --color-pill-active-bg: var(--color-text);
+  --color-pill-active-fg: var(--color-bg);
+  --color-pill-open-border: #4A4A50;
+  --color-accent-soft: rgba(255, 138, 31, 0.10);   /* active filter fill */
+  --color-accent-ring: rgba(255, 138, 31, 0.18);   /* focus ring */
+  --color-on-accent: #1A0E02;                      /* text on amber */
+  --color-duration-bg: rgba(0, 0, 0, 0.78);
+
+  --shadow-popover: 0 24px 48px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --focus-ring: 0 0 0 3px var(--color-accent-ring);
+}

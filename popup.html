@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>kempt</title>
+  <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+  <h1>kempt</h1>
+
+  <h2>Hide on YouTube</h2>
+  <label class="tile"><input type="checkbox" id="hide_music"><span class="name">Music</span><span class="state"></span></label>
+  <label class="tile"><input type="checkbox" id="hide_mixes"><span class="name">Mixes</span><span class="state"></span></label>
+  <label class="tile"><input type="checkbox" id="hide_shorts"><span class="name">Shorts</span><span class="state"></span></label>
+  <label class="tile"><input type="checkbox" id="tell_youtube"><span class="name">Tell YouTube</span><span class="state"></span></label>
+  <p class="note">Says “Not&nbsp;interested” to hidden music and Mixes, a few per page, so YouTube sends fewer. Also adds “Remove music from history” to the History page.</p>
+
+  <h2 class="gap">Hacker News</h2>
+  <label class="tile"><input type="checkbox" id="show_hn"><span class="name">Show in sidebar</span><span class="state"></span></label>
+  <button type="button" class="action" id="hn_open">Open Hacker News</button>
+  <p class="note"><span id="hn_stats"></span> <button type="button" id="hn_reset" hidden>Reset</button></p>
+  <script src="js/popup.js"></script>
+</body>
+</html>

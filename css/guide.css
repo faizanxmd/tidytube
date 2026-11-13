@@ -1,0 +1,113 @@
+/*
+ * kempt: the "Hacker News" sidebar entry (js/guide.js), sized like YouTube's
+ * own guide entries (measured from its computed styles) and coloured with
+ * its theme variables, so it sits in the sidebar in light and dark.
+ * YouTube renamed --yt-spec-text-primary to --yt-sys-color-baseline--text-primary
+ * in 2026; both are tried. Hover/focus use YouTube's own additive layer
+ * (5% black in light, 10% white in dark), falling back to a shade of the text
+ * colour, so it follows whichever theme is on.
+ */
+
+html:not([kempt-show-hn]) .kempt-guide {
+  display: none !important;
+}
+
+.kempt-guide {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: 40px;
+  margin-right: 12px; /* native entries are 204 wide in the 216 column */
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--yt-sys-color-baseline--text-primary, var(--yt-spec-text-primary, #0f0f0f));
+  font-family: "Roboto", "Arial", sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  text-decoration: none;
+}
+.kempt-guide:hover,
+.kempt-guide:focus-visible {
+  outline: none;
+  background: var(--yt-sys-color-baseline--additive-background, color-mix(in srgb, currentColor 7%, transparent));
+}
+.kempt-guide svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+.kempt-guide span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* collapsed sidebar: icon over a small label, 64x76 like its neighbours */
+.kempt-guide.kempt-guide-mini {
+  flex-direction: column;
+  gap: 6px;
+  width: 64px;
+  height: auto;
+  margin-right: 0;
+  padding: 16px 0 14px;
+  font-size: 10px;
+  line-height: 16px;
+}
+.kempt-guide-mini span {
+  max-width: 100%;
+}
+
+/* ------------------------------------------------------------------ */
+/* "Remove music from history" (js/history.js), sized like the History */
+/* page's own action buttons beside it                                 */
+/* ------------------------------------------------------------------ */
+
+html:not([kempt-hide-music]) #kempt-clean {
+  display: none !important;
+}
+
+#kempt-clean {
+  margin-bottom: 0;
+  color: var(--yt-sys-color-baseline--text-primary, var(--yt-spec-text-primary, #0f0f0f));
+  font-family: "Roboto", "Arial", sans-serif;
+}
+
+.kempt-clean-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 20px;
+  background: none;
+  color: inherit;
+  font: 500 14px/40px "Roboto", "Arial", sans-serif;
+  cursor: pointer;
+}
+/* YouTube's text buttons hover at 20% of the text colour in both themes */
+.kempt-clean-btn:hover,
+.kempt-clean-btn:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, currentColor 20%, transparent);
+}
+.kempt-clean-btn svg {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.kempt-clean-status {
+  max-width: 260px;
+  margin-top: 4px;
+  padding: 0 16px;
+  color: var(--yt-sys-color-baseline--text-secondary, var(--yt-spec-text-secondary, #606060));
+  font-size: 12px;
+  line-height: 18px;
+}
+.kempt-clean-status:empty {
+  display: none;
+}
