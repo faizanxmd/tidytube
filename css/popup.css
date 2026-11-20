@@ -1,113 +1,251 @@
 @font-face {
-  font-family: "Inter";
+  font-family: "Geist";
   font-weight: 100 900;
-  src: url("../fonts/inter.ttf") format("truetype");
+  font-display: swap;
+  src: url("../fonts/Geist-Variable.woff2") format("woff2");
 }
-
-:root {
-  --base: #0e1014;
-  --raised: #181b21;
-  --overlay: #262a32;
-  --overlay-hover: #2e333c;
-  --ink: #f4f5f8;
-  --muted: #a4a8b0;
-  --accent: #0f1e66;
-  --accent-hover: #142680;
-  --radius: 6px;
+@font-face {
+  font-family: "Geist Mono";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/GeistMono-Variable.woff2") format("woff2");
 }
 
 * { box-sizing: border-box; }
+html { color-scheme: dark; }
 
 body {
-  width: 280px;
+  width: 312px;
   margin: 0;
-  padding: 20px;
-  background: var(--base);
-  color: var(--ink);
-  font-family: "Inter", system-ui, sans-serif;
+  padding: 16px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 400 13.5px / 1.4 var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+[hidden] { display: none !important; }
 
-h1 {
-  margin: 0 0 20px;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-h2 {
-  margin: 0 0 10px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-}
-h2.gap { margin-top: 24px; }
-
-/* toggles: a whole row is the switch; navy when on */
-.tile {
+.head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 44px;
-  padding: 0 14px;
-  border-radius: var(--radius);
-  background: var(--overlay);
-  cursor: pointer;
-  font-size: 15px;
+  margin-bottom: 16px;
+}
+h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.active-badge {
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  color: var(--color-muted);
+  font: 500 11px / 16px var(--font-mono);
+}
+.active-badge.on {
+  border-color: rgba(255, 138, 31, 0.35);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.sec + .sec {
+  margin-top: 16px;
+}
+.sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+h2 {
+  margin: 0 0 8px;
+  color: var(--color-muted);
+  font-size: 11px;
   font-weight: 600;
-  user-select: none;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 }
-.tile + .tile { margin-top: 8px; }
-.tile:hover { background: var(--overlay-hover); }
-.tile:has(input:checked) { background: var(--accent); }
-.tile:has(input:checked):hover { background: var(--accent-hover); }
-.tile:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-.tile input { position: absolute; opacity: 0; pointer-events: none; }
-
-.state { color: var(--muted); font-size: 13px; font-weight: 500; }
-.state::after { content: "Off"; }
-input:checked ~ .state { color: var(--ink); }
-input:checked ~ .state::after { content: "On"; }
-
-/* the one action: outlined, centred, so it can't be mistaken for a toggle */
-.action {
-  display: block;
-  width: 100%;
-  height: 40px;
-  margin-top: 8px;
-  border: 1px solid var(--overlay);
-  border-radius: var(--radius);
-  background: none;
-  color: var(--ink);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
+.sec-head h2 {
+  margin: 0;
 }
-.action::after { content: " →"; color: var(--muted); font-weight: 500; }
-.action:hover { background: var(--raised); border-color: var(--overlay-hover); }
 
-.note {
-  margin: 10px 2px 0;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 17px;
-}
-.note button {
+.text-link {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--ink);
-  font: inherit;
-  font-weight: 600;
+  color: var(--color-muted);
+  font: 500 12px / 1 var(--font-sans);
   cursor: pointer;
 }
-.note button:hover { text-decoration: underline; }
+.text-link:hover {
+  color: var(--color-accent);
+}
 
-.action:focus-visible,
-.note button:focus-visible {
-  outline: 2px solid var(--ink);
+/* Toggle list */
+.list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.list.compact {
+  margin-top: 8px;
+}
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s ease;
+}
+.row + .row {
+  border-top: 1px solid var(--color-line);
+}
+.row:hover {
+  background: var(--color-raised);
+}
+.row input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.row-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+/* Crisp pill switch */
+.toggle {
+  flex: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-line);
+  transition: background 0.16s ease;
+}
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-muted);
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+.row input:checked + .toggle {
+  background: var(--color-accent);
+}
+.row input:checked + .toggle::after {
+  transform: translateX(14px);
+  background: var(--color-on-accent);
+}
+.row:has(input:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* Action cards (History cleaner + Hacker News) */
+.tool-btn,
+.hn-btn {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.tool-btn:hover,
+.hn-btn:hover {
+  background: var(--color-raised);
+  border-color: var(--color-pill-open-border);
+}
+.tool-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--color-raised);
+  color: var(--color-accent);
+}
+.tool-icon svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+.hn-badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font: 700 11.5px / 1 var(--font-mono);
+}
+.tool-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tool-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 18px;
+}
+.tool-sub {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-muted);
+  font-size: 11.5px;
+  line-height: 15px;
+}
+.arrow {
+  flex: none;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+
+.foot-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 2px 0;
+  color: var(--color-muted);
+  font-size: 11.5px;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
-.note button:focus-visible { border-radius: 2px; outline-offset: 1px; }

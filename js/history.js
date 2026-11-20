@@ -1,19 +1,18 @@
 /*
- * Tidy Tube: "Clean up history" on YouTube's History page.
+ * Tidy Tube: on-demand, preview-first Watch History cleaner.
  *
- * YouTube recommends from your watch history, and YT Music shares it, so
- * whatever piles up there (songs, news, TV clips) is what you get more of.
- * Removing a video from your history is a stronger signal than "Not
- * interested" (Mozilla's 2022 study), and it takes the video out of what
- * YouTube recommends from.
+ * Watch history cleanup is a one-time tool you run whenever you want —
+ * completely separate from active hiding.
  *
- * Adds one button to the History page's action column, styled like its
- * neighbours. Pressing it (after a confirm) walks your history and, for each
- * entry a Filters category with History on matches (js/junk.js), picks
- * "Remove from watch history" from YouTube's own ⋮ menu. It loads more
- * history as it goes, up to 300 removals and 2000 entries checked a run, and
- * can be stopped. Videos Hacker News recommends are never removed. Nothing
- * happens unless you press it.
+ * Adds a "Clean watch history" button to YouTube's History page action column
+ * (and opens automatically when launched via /feed/history#tidy-clean from the
+ * popup). Inside the panel:
+ *   1. Pick which categories (and optional one-off keywords/channels) to clean.
+ *   2. Preview the exact matched videos right away, unchecking any you want to
+ *      keep. Videos recommended by Hacker News are automatically protected.
+ *   3. Optionally load older history into the preview, or enable deep-clean
+ *      auto-scrolling (up to 300 removals), then remove with live progress and
+ *      a Stop button.
  */
 (() => {
   "use strict";
@@ -22,21 +21,34 @@
   const junk = globalThis.tidyJunk;
 
   const PAGE = 'ytd-browse[page-subtype="history"]';
-  const ENTRIES = PAGE + " :is(yt-lockup-view-model, ytd-video-renderer)";
-  const DIRECT = 'button[aria-label^="Remove from" i]'; // older layouts: an ✕ on the entry
+  const ENTRY_SEL = "yt-lockup-view-model, ytd-video-renderer";
+  const ENTRIES = PAGE + " :is(" + ENTRY_SEL + ")";
+  const DIRECT = 'button[aria-label^="Remove from" i]';
   const ITEM = /^remove from (watch )?history/i;
-  const CAP = 300; // removals a run
-  const SCAN_CAP = 2000; // entries checked a run
-  const GAP = [400, 900]; // ms between removals
-  const LABEL = "Clean up history";
-  // Material "delete_sweep"
-  const ICON =
-    "M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z";
+  const CAP = 300;
+  const SCAN_CAP = 2000;
+  const GAP = [350, 750];
 
-  let running = false;
-  let stop = false;
+  // Material "delete_sweep"
+  const ICON_SWEEP =
+    "M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z";
+  const ICON_CLOSE =
+    "M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z";
 
   const onHistory = () => location.pathname === "/feed/history";
+
+  let panel = null;
+  let running = false;
+  let loadingMore = false;
+  let stop = false;
+  let selectedCats = new Set();
+  let extraText = "";
+  let deepClean = false;
+  let excludedCards = new WeakSet(); // user unchecked these specific cards in preview
+  let previewMatches = []; // [{ card, key, title, channel, category }]
+  let loadedCount = 0;
+  let protectedCount = 0;
+  let scanSeq = 0;
 
   function el(tag, cls, text) {
     const e = document.createElement(tag);
@@ -45,39 +57,27 @@
     return e;
   }
 
-  function build() {
-    const wrap = el("div", "tidy-clean");
-    wrap.id = "tidy-clean";
-    const b = el("button", "tidy-clean-btn");
-    b.type = "button";
+  function svgIcon(pathD) {
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", "0 0 24 24");
     svg.setAttribute("aria-hidden", "true");
     const p = document.createElementNS(NS, "path");
-    p.setAttribute("d", ICON);
+    p.setAttribute("d", pathD);
     svg.append(p);
-    b.append(svg, el("span", null, LABEL));
-    b.addEventListener("click", () => (running ? (stop = true) : clean()));
-    wrap.append(b, el("div", "tidy-clean-status"));
-    return wrap;
+    return svg;
   }
 
-  function ensureButton() {
-    if (!onHistory() || document.getElementById("tidy-clean")) return;
-    const page = document.querySelector(PAGE);
-    const contents = page && page.querySelector("ytd-browse-feed-actions-renderer #contents");
-    if (contents) contents.prepend(build());
+  // Top-level history card elements (skip nested renderers and already-removed cards)
+  function historyCards() {
+    const all = [...document.querySelectorAll(ENTRIES)];
+    return all.filter((c) => {
+      if (c.hasAttribute("data-tidy-removed")) return false;
+      if (c.parentElement && c.parentElement.closest(ENTRY_SEL)) return false;
+      return !!cardKey(c);
+    });
   }
 
-  function setUi(status) {
-    const w = document.getElementById("tidy-clean");
-    if (!w) return;
-    w.querySelector("span").textContent = running ? "Stop" : LABEL;
-    if (status != null) w.querySelector(".tidy-clean-status").textContent = status;
-  }
-
-  // YouTube recycles elements: a removed entry's mark goes once it shows another video
   function unmarkRecycled() {
     for (const c of document.querySelectorAll("[data-tidy-removed]")) {
       const key = cardKey(c);
@@ -85,130 +85,560 @@
     }
   }
 
-  // Videos in the Hacker News catalogue are never removed. When the
-  // extension can't answer (reloaded under the tab), keep the video.
-  function inCatalogue(vid) {
+  function knownCatalogueVids(vids) {
+    if (!vids.length) return Promise.resolve(new Set());
     return new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage({ type: "hn:known", vids: [vid] }, (r) => {
-          if (chrome.runtime.lastError || !r || !Array.isArray(r.known)) resolve(true);
-          else resolve(r.known.includes(vid));
+        chrome.runtime.sendMessage({ type: "hn:known", vids }, (r) => {
+          if (chrome.runtime.lastError || !r || !Array.isArray(r.known)) {
+            // If extension cannot answer, conservatively protect all vids
+            resolve(new Set(vids));
+          } else {
+            resolve(new Set(r.known));
+          }
         });
       } catch (e) {
-        resolve(true);
+        resolve(new Set(vids));
       }
     });
   }
 
-  // Scroll to the end and wait for YouTube to append more entries.
-  // false when nothing came: the end of your history, or YouTube is slow.
-  async function loadMore() {
+  function extraTerms() {
+    return extraText
+      .split(/[,\n]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  function initSelectedCats() {
+    const cats = junk.categories();
+    const activeIds = cats.filter((c) => c.enabled).map((c) => c.id);
+    selectedCats = new Set(activeIds.length ? activeIds : cats.slice(0, 2).map((c) => c.id));
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Action button in YouTube's History sidebar                        */
+  /* ---------------------------------------------------------------- */
+
+  function buildTrigger() {
+    const wrap = el("div", "tidy-clean");
+    wrap.id = "tidy-clean";
+    const btn = el("button", "tidy-clean-btn");
+    btn.type = "button";
+    btn.append(svgIcon(ICON_SWEEP), el("span", null, "Clean watch history"));
+    btn.addEventListener("click", openPanel);
+    wrap.append(btn);
+    return wrap;
+  }
+
+  function ensureButton() {
+    if (!onHistory()) {
+      if (panel && !running) closePanel();
+      return;
+    }
+    if (!document.getElementById("tidy-clean")) {
+      const page = document.querySelector(PAGE);
+      const contents =
+        page &&
+        (page.querySelector("ytd-browse-feed-actions-renderer #contents") ||
+          page.querySelector("#secondary #contents"));
+      if (contents) contents.prepend(buildTrigger());
+    }
+    if (location.hash === "#tidy-clean") {
+      history.replaceState(null, "", location.pathname + location.search);
+      openPanel();
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Preview-first floating panel                                      */
+  /* ---------------------------------------------------------------- */
+
+  let ui = {};
+
+  function openPanel() {
+    if (!onHistory()) return;
+    if (panel) {
+      panel.hidden = false;
+      scanLoaded();
+      return;
+    }
+    initSelectedCats();
+    excludedCards = new WeakSet();
+    extraText = "";
+    deepClean = false;
+
+    panel = el("aside", "tidy-hc");
+    panel.id = "tidy-hc";
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", "Clean watch history");
+
+    // Header
+    const head = el("div", "tidy-hc-head");
+    const titleWrap = el("div", "tidy-hc-title");
+    const dot = el("span", "tidy-hc-dot");
+    titleWrap.append(dot, el("span", null, "Clean watch history"));
+    const closeBtn = el("button", "tidy-hc-close");
+    closeBtn.type = "button";
+    closeBtn.setAttribute("aria-label", "Close");
+    closeBtn.append(svgIcon(ICON_CLOSE));
+    closeBtn.addEventListener("click", () => {
+      if (running) stop = true;
+      closePanel();
+    });
+    head.append(titleWrap, closeBtn);
+
+    // Body
+    const body = el("div", "tidy-hc-body");
+
+    // 1. Category pills
+    const catLabel = el("div", "tidy-hc-sec", "What to clean");
+    const pills = el("div", "tidy-hc-pills");
+    const cats = junk.categories();
+    for (const c of cats) {
+      const pill = el("label", "tidy-hc-pill");
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.checked = selectedCats.has(c.id);
+      box.addEventListener("change", () => {
+        if (box.checked) selectedCats.add(c.id);
+        else selectedCats.delete(c.id);
+        scanLoaded();
+      });
+      pill.append(box, el("span", null, c.name));
+      pills.append(pill);
+    }
+
+    // 2. One-off keyword / channel input
+    const extraInput = document.createElement("input");
+    extraInput.type = "text";
+    extraInput.className = "tidy-hc-input";
+    extraInput.placeholder = "Also match channel or keyword (comma-separated)…";
+    extraInput.autocomplete = "off";
+    let inputTimer = 0;
+    extraInput.addEventListener("input", () => {
+      extraText = extraInput.value;
+      clearTimeout(inputTimer);
+      inputTimer = setTimeout(scanLoaded, 180);
+    });
+
+    // 3. Preview summary bar
+    const bar = el("div", "tidy-hc-bar");
+    const stats = el("div", "tidy-hc-stats", "Scanning loaded history…");
+    const barBtns = el("div", "tidy-hc-bar-btns");
+    const selAllBtn = el("button", "tidy-hc-link", "All");
+    selAllBtn.type = "button";
+    selAllBtn.hidden = true;
+    selAllBtn.addEventListener("click", () => {
+      const allSelected = previewMatches.every((m) => !excludedCards.has(m.card));
+      for (const m of previewMatches) {
+        if (allSelected) excludedCards.add(m.card);
+        else excludedCards.delete(m.card);
+      }
+      renderPreview();
+    });
+    const loadBtn = el("button", "tidy-hc-subtle", "Load older");
+    loadBtn.type = "button";
+    loadBtn.addEventListener("click", loadOlderBatch);
+    barBtns.append(selAllBtn, loadBtn);
+    bar.append(stats, barBtns);
+
+    // 4. Scrollable match list
+    const list = el("div", "tidy-hc-list");
+
+    // 5. Protected note + Deep clean option
+    const deepLabel = el("label", "tidy-hc-deep");
+    const deepBox = document.createElement("input");
+    deepBox.type = "checkbox";
+    deepBox.checked = deepClean;
+    deepBox.addEventListener("change", () => {
+      deepClean = deepBox.checked;
+      updateActionBtn();
+    });
+    deepLabel.append(deepBox, el("span", null, "Keep scrolling older history (up to " + CAP + ")"));
+
+    const note = el("div", "tidy-hc-note", "Hacker News picks are automatically protected.");
+
+    // 6. Progress & status banner
+    const progWrap = el("div", "tidy-hc-prog");
+    progWrap.hidden = true;
+    const progTrack = el("div", "tidy-hc-prog-track");
+    const progFill = el("div", "tidy-hc-prog-fill");
+    progTrack.append(progFill);
+    const progText = el("div", "tidy-hc-prog-text");
+    progWrap.append(progTrack, progText);
+
+    const status = el("div", "tidy-hc-status");
+    status.hidden = true;
+
+    // Footer actions
+    const foot = el("div", "tidy-hc-foot");
+    const actionBtn = el("button", "tidy-hc-primary", "Remove");
+    actionBtn.type = "button";
+    actionBtn.addEventListener("click", () => {
+      if (running) stop = true;
+      else runClean();
+    });
+    const doneBtn = el("button", "tidy-hc-secondary", "Done");
+    doneBtn.type = "button";
+    doneBtn.hidden = true;
+    doneBtn.addEventListener("click", closePanel);
+    foot.append(actionBtn, doneBtn);
+
+    body.append(catLabel, pills, extraInput, bar, list, deepLabel, note, progWrap, status);
+    panel.append(head, body, foot);
+    document.body.append(panel);
+
+    ui = {
+      pills,
+      extraInput,
+      stats,
+      selAllBtn,
+      loadBtn,
+      list,
+      deepBox,
+      note,
+      progWrap,
+      progFill,
+      progText,
+      status,
+      actionBtn,
+      doneBtn,
+    };
+
+    scanLoaded();
+  }
+
+  function closePanel() {
+    if (panel) {
+      panel.remove();
+      panel = null;
+      ui = {};
+    }
+  }
+
+  function selectedMatches() {
+    return previewMatches.filter((m) => !excludedCards.has(m.card));
+  }
+
+  function updateActionBtn() {
+    if (!panel) return;
+    const count = selectedMatches().length;
+    const hasCriteria = selectedCats.size > 0 || extraTerms().length > 0;
+    if (running) {
+      ui.actionBtn.textContent = "Stop";
+      ui.actionBtn.className = "tidy-hc-danger";
+      ui.actionBtn.disabled = false;
+      return;
+    }
+    ui.actionBtn.className = "tidy-hc-primary";
+    if (!hasCriteria) {
+      ui.actionBtn.textContent = "Pick a category or keyword";
+      ui.actionBtn.disabled = true;
+    } else if (count > 0) {
+      ui.actionBtn.textContent =
+        "Remove " + count + (count === 1 ? " video" : " videos") + (deepClean ? " + older" : "");
+      ui.actionBtn.disabled = false;
+    } else if (deepClean) {
+      ui.actionBtn.textContent = "Scan & clean older history";
+      ui.actionBtn.disabled = false;
+    } else {
+      ui.actionBtn.textContent = "Nothing to remove";
+      ui.actionBtn.disabled = true;
+    }
+  }
+
+  function renderPreview() {
+    if (!panel) return;
+    const total = previewMatches.length;
+    const picked = selectedMatches().length;
+    const hasCriteria = selectedCats.size > 0 || extraTerms().length > 0;
+
+    if (!hasCriteria) {
+      ui.stats.textContent = "Pick at least one category or type a keyword.";
+      ui.selAllBtn.hidden = true;
+      ui.list.replaceChildren();
+      updateActionBtn();
+      return;
+    }
+
+    const parts = [
+      total + (total === 1 ? " match" : " matches") + " in " + loadedCount + " loaded",
+    ];
+    if (protectedCount) {
+      parts.push(protectedCount + " HN protected");
+    }
+    ui.stats.textContent = parts.join(" · ");
+
+    ui.selAllBtn.hidden = total === 0;
+    if (total > 0) {
+      ui.selAllBtn.textContent = picked === total ? "None" : "All";
+    }
+
+    ui.list.replaceChildren();
+    if (!total) {
+      ui.list.append(
+        el(
+          "div",
+          "tidy-hc-empty",
+          "No matches in the " + loadedCount + " loaded videos. Click “Load older” to scan further back."
+        )
+      );
+    } else {
+      const frag = document.createDocumentFragment();
+      for (const m of previewMatches) {
+        const row = el("label", "tidy-hc-row");
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !excludedCards.has(m.card);
+        cb.disabled = running;
+        cb.addEventListener("change", () => {
+          if (cb.checked) excludedCards.delete(m.card);
+          else excludedCards.add(m.card);
+          ui.selAllBtn.textContent =
+            selectedMatches().length === previewMatches.length ? "None" : "All";
+          updateActionBtn();
+        });
+        const info = el("div", "tidy-hc-info");
+        info.append(
+          el("div", "tidy-hc-vtitle", m.title || "Untitled video"),
+          el("div", "tidy-hc-vchan", m.channel || "")
+        );
+        const tag = el("span", "tidy-hc-tag", m.category);
+        row.append(cb, info, tag);
+        frag.append(row);
+      }
+      ui.list.append(frag);
+    }
+    updateActionBtn();
+  }
+
+  async function scanLoaded() {
+    if (!panel || running) return;
+    const seq = ++scanSeq;
+    const hasCriteria = selectedCats.size > 0 || extraTerms().length > 0;
+    const cards = historyCards();
+    loadedCount = cards.length;
+    if (!hasCriteria) {
+      previewMatches = [];
+      protectedCount = 0;
+      renderPreview();
+      return;
+    }
+
+    const matcher = junk.buildCleanupMatcher([...selectedCats], extraTerms());
+    const raw = [];
+    for (const c of cards) {
+      const cat = matcher(c);
+      if (!cat) continue;
+      raw.push({
+        card: c,
+        key: cardKey(c),
+        title: junk.titleOf(c),
+        channel: junk.channelLabel(c),
+        category: cat,
+      });
+    }
+
+    const uniqueVids = [...new Set(raw.map((m) => m.key).filter(Boolean))];
+    const protectedSet = await knownCatalogueVids(uniqueVids);
+    if (seq !== scanSeq || !panel) return;
+
+    const kept = [];
+    let prot = 0;
+    for (const m of raw) {
+      if (protectedSet.has(m.key)) {
+        prot++;
+      } else {
+        kept.push(m);
+      }
+    }
+    previewMatches = kept;
+    protectedCount = prot;
+    renderPreview();
+  }
+
+  async function scrollBatch() {
     const before = document.querySelectorAll(ENTRIES).length;
     window.scrollTo(0, document.documentElement.scrollHeight);
-    for (let t = 0; t < 4000 && !stop; t += 250) {
+    for (let t = 0; t < 3500 && !stop; t += 250) {
       await sleep(250);
       if (document.querySelectorAll(ENTRIES).length > before) {
-        await sleep(300); // let the batch finish rendering
+        await sleep(300);
         return true;
       }
     }
     return false;
   }
 
-  // "Removed 23 entries (12 Politics & news, 6 Music, 5 TV clips)."
-  function summary(counts, removed) {
+  async function loadOlderBatch() {
+    if (!panel || running || loadingMore) return;
+    loadingMore = true;
+    ui.loadBtn.disabled = true;
+    ui.loadBtn.textContent = "Loading…";
+    try {
+      let got = false;
+      for (let i = 0; i < 2; i++) {
+        if (await scrollBatch()) got = true;
+        else break;
+      }
+      await scanLoaded();
+      if (!got && panel) {
+        ui.loadBtn.textContent = "End reached";
+        setTimeout(() => {
+          if (panel && !loadingMore) ui.loadBtn.textContent = "Load older";
+        }, 2000);
+      }
+    } finally {
+      loadingMore = false;
+      if (panel) {
+        ui.loadBtn.disabled = false;
+        if (ui.loadBtn.textContent === "Loading…") ui.loadBtn.textContent = "Load older";
+      }
+    }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Removing confirmed entries                                        */
+  /* ---------------------------------------------------------------- */
+
+  function summaryText(counts, removed) {
     const parts = Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .map(([name, n]) => n + " " + name);
     return (
-      "Removed " + removed + (removed === 1 ? " entry" : " entries") +
-      (parts.length ? " (" + parts.join(", ") + ")" : "") + "."
+      "Removed " +
+      removed +
+      (removed === 1 ? " video" : " videos") +
+      (parts.length ? " (" + parts.join(", ") + ")" : "") +
+      "."
     );
   }
 
-  async function clean() {
-    const names = junk.historyNames();
-    if (!names.length) {
-      setUi("No filter has History on. Turn it on for some in Tidy Tube's Filters page.");
-      return;
-    }
-    if (
-      !confirm(
-        "Remove these from your YouTube watch history?\n\n" + names.join(", ") + "\n\n" +
-          "Tidy Tube removes up to " + CAP + " matching entries, the same as using each one's " +
-          "⋮ → Remove from watch history. Videos Hacker News recommends are kept. This can't be undone."
-      )
-    ) {
-      return;
-    }
+  function setControlsDisabled(disabled) {
+    if (!panel) return;
+    for (const inp of ui.pills.querySelectorAll("input")) inp.disabled = disabled;
+    ui.extraInput.disabled = disabled;
+    ui.deepBox.disabled = disabled;
+    ui.loadBtn.disabled = disabled;
+    ui.selAllBtn.disabled = disabled;
+    for (const cb of ui.list.querySelectorAll("input")) cb.disabled = disabled;
+  }
+
+  async function runClean() {
+    if (!panel || running) return;
     running = true;
     stop = false;
+    setControlsDisabled(true);
+    ui.status.hidden = true;
+    ui.doneBtn.hidden = true;
+    ui.progWrap.hidden = false;
+    updateActionBtn();
+
+    const counts = {};
     let removed = 0;
-    let checked = 0;
-    let misses = 0; // in a row: the menu has no "Remove" item
-    let stale = 0; // loads in a row that brought nothing
+    let checked = loadedCount;
+    let misses = 0;
     let failed = null;
-    const counts = {}; // category name -> removals
-    const verdict = new WeakMap(); // entry -> the video it was found not to match on
-    const tried = new Set(); // videos attempted this run
+    const tried = new Set();
 
-    // first unchecked entry that matches, checking the ones on the way
-    function next() {
-      for (const c of document.querySelectorAll(ENTRIES)) {
-        if (c.hasAttribute("data-tidy-removed")) continue;
-        const key = cardKey(c);
-        if (!key || tried.has(key) || verdict.get(c) === key) continue;
-        const name = junk.forHistory(c);
-        if (name) return { c, key, name };
-        verdict.set(c, key);
-        checked++;
-      }
-      return null;
-    }
-    const progress = () => setUi("Checked " + checked + ", removed " + removed + "…");
+    const queue = selectedMatches();
+    const initialTotal = queue.length;
 
-    setUi("Looking…");
+    const setProgress = (done, total, text) => {
+      if (!panel) return;
+      const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+      ui.progFill.style.width = (deepClean ? Math.min(100, Math.round((removed / CAP) * 100)) : pct) + "%";
+      ui.progText.textContent = text;
+    };
+
     try {
-      while (!stop && removed < CAP && onHistory()) {
-        const found = next();
-        progress();
-        if (!found) {
-          if (checked >= SCAN_CAP) break;
-          stale = (await loadMore()) ? 0 : stale + 1;
-          if (stale >= 2) break; // the end of your history
-          continue;
-        }
-        const { c, key, name } = found;
-        tried.add(key);
-        if (await inCatalogue(key)) {
-          checked++;
-          continue;
-        }
-        c.scrollIntoView({ block: "center" });
-        const result = await pick(c, ITEM, DIRECT);
+      // Phase 1: remove the exact previewed & checked entries
+      for (let idx = 0; idx < queue.length && !stop && removed < CAP && onHistory(); idx++) {
+        const m = queue[idx];
+        if (!m.card.isConnected || m.card.hasAttribute("data-tidy-removed")) continue;
+        tried.add(m.card);
+        setProgress(idx, initialTotal, "Removing " + (removed + 1) + " of " + initialTotal + "…");
+        m.card.scrollIntoView({ block: "center" });
+        const result = await pick(m.card, ITEM, DIRECT);
         if (result === "done") {
-          c.setAttribute("data-tidy-removed", key);
+          m.card.setAttribute("data-tidy-removed", m.key);
           removed++;
-          checked++;
-          counts[name] = (counts[name] || 0) + 1;
+          counts[m.category] = (counts[m.category] || 0) + 1;
           misses = 0;
-          progress();
+          setProgress(idx + 1, initialTotal, "Removed " + removed + " of " + initialTotal + "…");
           await sleep(GAP[0] + Math.random() * (GAP[1] - GAP[0]));
         } else if (result !== "no-button" && ++misses >= 3) {
-          failed = "YouTube's menu has no “Remove from watch history” here. Are you signed in, in English?";
+          failed = "Couldn't find “Remove from watch history” in YouTube's menu. Make sure you're signed in, in English.";
           break;
+        }
+      }
+
+      // Phase 2 (optional): deep-clean auto-scrolling
+      if (deepClean && !stop && !failed && removed < CAP && onHistory()) {
+        const matcher = junk.buildCleanupMatcher([...selectedCats], extraTerms());
+        let stale = 0;
+        const checkedCards = new WeakSet(historyCards());
+
+        while (!stop && removed < CAP && checked < SCAN_CAP && onHistory()) {
+          setProgress(removed, CAP, "Loading older history… (" + removed + " removed)");
+          const gotMore = await scrollBatch();
+          if (!gotMore) {
+            if (++stale >= 2) break;
+            continue;
+          }
+          stale = 0;
+
+          const fresh = historyCards().filter((c) => !checkedCards.has(c) && !tried.has(c));
+          const batch = [];
+          for (const c of fresh) {
+            checkedCards.add(c);
+            checked++;
+            const cat = matcher(c);
+            if (cat) batch.push({ card: c, key: cardKey(c), category: cat });
+          }
+          if (!batch.length) continue;
+
+          const protectedSet = await knownCatalogueVids([...new Set(batch.map((b) => b.key))]);
+          for (const m of batch) {
+            if (stop || removed >= CAP || !onHistory()) break;
+            if (protectedSet.has(m.key)) continue;
+            if (!m.card.isConnected || m.card.hasAttribute("data-tidy-removed")) continue;
+            tried.add(m.card);
+            m.card.scrollIntoView({ block: "center" });
+            const result = await pick(m.card, ITEM, DIRECT);
+            if (result === "done") {
+              m.card.setAttribute("data-tidy-removed", m.key);
+              removed++;
+              counts[m.category] = (counts[m.category] || 0) + 1;
+              misses = 0;
+              setProgress(removed, CAP, "Removed " + removed + " (checked " + checked + ")…");
+              await sleep(GAP[0] + Math.random() * (GAP[1] - GAP[0]));
+            } else if (result !== "no-button" && ++misses >= 3) {
+              failed = "Couldn't find “Remove from watch history” in YouTube's menu. Make sure you're signed in, in English.";
+              break;
+            }
+          }
+          if (failed) break;
         }
       }
     } finally {
       running = false;
-      setUi(
-        failed ||
+      if (panel) {
+        setControlsDisabled(false);
+        ui.progWrap.hidden = true;
+        ui.status.hidden = false;
+        ui.status.classList.toggle("error", !!failed);
+        ui.status.textContent =
+          failed ||
           (removed
-            ? summary(counts, removed) + (removed >= CAP ? " Press again for more." : stop ? " Stopped." : "")
+            ? summaryText(counts, removed) + (removed >= CAP ? " Run again for more." : stop ? " Stopped." : "")
             : stop
               ? "Stopped."
-              : "Nothing to remove in the " + checked + " entries checked.")
-      );
+              : "No videos were removed.");
+        ui.doneBtn.hidden = false;
+        await scanLoaded();
+      }
     }
   }
 
@@ -216,5 +646,8 @@
   window.addEventListener("tidy-scan", () => {
     ensureButton();
     unmarkRecycled();
+  });
+  window.addEventListener("tidy-filters", () => {
+    if (panel && !running) scanLoaded();
   });
 })();

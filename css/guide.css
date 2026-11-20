@@ -1,78 +1,103 @@
 /*
- * Tidy Tube: the "Hacker News" sidebar entry (js/guide.js), sized like YouTube's
- * own guide entries (measured from its computed styles) and coloured with
- * its theme variables, so it sits in the sidebar in light and dark.
- * YouTube renamed --yt-spec-text-primary to --yt-sys-color-baseline--text-primary
- * in 2026; both are tried. Hover/focus use YouTube's own additive layer
- * (5% black in light, 10% white in dark), falling back to a shade of the text
- * colour, so it follows whichever theme is on.
+ * Tidy Tube: YouTube-injected UI styles.
+ *   1. Hacker News sidebar entry (js/guide.js) — native YouTube sizing & theme
+ *      variables for both expanded guide and collapsed mini-guide, light & dark.
+ *   2. Watch History cleaner button & preview-first panel (js/history.js).
  */
 
-html:not([tidy-show-hn]) .tidy-guide {
+/* ------------------------------------------------------------------ */
+/* 1. Hacker News sidebar entry                                        */
+/* ------------------------------------------------------------------ */
+
+html[tidy-hide-hn] .tidy-guide {
   display: none !important;
 }
 
 .tidy-guide {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 24px;
+  width: calc(100% - 12px);
   height: 40px;
-  margin-right: 12px; /* native entries are 204 wide in the 216 column */
   padding: 0 12px;
   border-radius: 10px;
-  color: var(--yt-sys-color-baseline--text-primary, var(--yt-spec-text-primary, #0f0f0f));
+  color: var(--yt-spec-text-primary, var(--yt-sys-color-baseline--text-primary, #0f0f0f));
   font-family: "Roboto", "Arial", sans-serif;
   font-size: 14px;
+  font-weight: 400;
   line-height: 20px;
   text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+html[dark] .tidy-guide {
+  color: var(--yt-spec-text-primary, var(--yt-sys-color-baseline--text-primary, #f1f1f1));
 }
 .tidy-guide:hover,
 .tidy-guide:focus-visible {
   outline: none;
-  background: var(--yt-sys-color-baseline--additive-background, color-mix(in srgb, currentColor 7%, transparent));
+  background: var(
+    --yt-spec-10-percent-layer,
+    var(--yt-sys-color-baseline--additive-background, color-mix(in srgb, currentColor 8%, transparent))
+  );
 }
-.tidy-guide svg {
+.tidy-guide:focus-visible {
+  box-shadow: inset 0 0 0 1.5px #ff8a1f;
+}
+
+.tidy-guide .tidy-hn-badge {
   flex: none;
+  display: block;
   width: 24px;
   height: 24px;
-  fill: currentColor;
+  transition: transform 0.14s ease, filter 0.14s ease;
 }
-.tidy-guide span {
+.tidy-guide:hover .tidy-hn-badge {
+  filter: brightness(1.06);
+}
+.tidy-guide-label {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-/* collapsed sidebar: icon over a small label, 64x76 like its neighbours */
+/* Collapsed mini-sidebar: vertical 64px tile matching Home / Subscriptions */
 .tidy-guide.tidy-guide-mini {
   flex-direction: column;
+  justify-content: center;
   gap: 6px;
   width: 64px;
   height: auto;
   margin-right: 0;
   padding: 16px 0 14px;
   font-size: 10px;
-  line-height: 16px;
+  line-height: 14px;
+  text-align: center;
 }
-.tidy-guide-mini span {
+.tidy-guide-mini .tidy-guide-label {
   max-width: 100%;
+  padding: 0 4px;
 }
 
 /* ------------------------------------------------------------------ */
-/* "Clean up history" (js/history.js), sized like the History page's own */
-/* action buttons beside it                                            */
+/* 2. Watch History cleaner button (History page action column)        */
 /* ------------------------------------------------------------------ */
 
 .tidy-clean {
-  margin-bottom: 0;
-  color: var(--yt-sys-color-baseline--text-primary, var(--yt-spec-text-primary, #0f0f0f));
+  margin-bottom: 4px;
+  color: var(--yt-spec-text-primary, var(--yt-sys-color-baseline--text-primary, #0f0f0f));
   font-family: "Roboto", "Arial", sans-serif;
+}
+html[dark] .tidy-clean {
+  color: var(--yt-spec-text-primary, var(--yt-sys-color-baseline--text-primary, #f1f1f1));
 }
 
 .tidy-clean-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   height: 40px;
   margin: 0;
   padding: 0 16px;
@@ -83,27 +108,401 @@ html:not([tidy-show-hn]) .tidy-guide {
   font: 500 14px/40px "Roboto", "Arial", sans-serif;
   cursor: pointer;
 }
-/* YouTube's text buttons hover at 20% of the text colour in both themes */
 .tidy-clean-btn:hover,
 .tidy-clean-btn:focus-visible {
   outline: none;
-  background: color-mix(in srgb, currentColor 20%, transparent);
+  background: color-mix(in srgb, currentColor 16%, transparent);
 }
 .tidy-clean-btn svg {
   flex: none;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
+  fill: #ff8a1f;
+}
+
+/* ------------------------------------------------------------------ */
+/* 3. Watch History cleaner preview-first panel                        */
+/* ------------------------------------------------------------------ */
+
+.tidy-hc {
+  --hc-bg: #ffffff;
+  --hc-surface: #f4f4f6;
+  --hc-raised: #ebebef;
+  --hc-line: #e2e2e7;
+  --hc-text: #0f0f10;
+  --hc-muted: #606068;
+  --hc-accent: #e06e00;
+  --hc-accent-bg: rgba(224, 110, 0, 0.12);
+  --hc-on-accent: #ffffff;
+  --hc-danger: #d93025;
+  --hc-shadow: 0 18px 48px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2200;
+  display: flex;
+  flex-direction: column;
+  width: min(410px, calc(100vw - 32px));
+  max-height: min(620px, calc(100vh - 88px));
+  border: 1px solid var(--hc-line);
+  border-radius: 16px;
+  background: var(--hc-bg);
+  color: var(--hc-text);
+  font-family: "Roboto", system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  box-shadow: var(--hc-shadow);
+  overflow: hidden;
+}
+html[dark] .tidy-hc {
+  --hc-bg: #141416;
+  --hc-surface: #1c1c20;
+  --hc-raised: #25252a;
+  --hc-line: #2e2e34;
+  --hc-text: #f3f3f1;
+  --hc-muted: #a6a6ab;
+  --hc-accent: #ff8a1f;
+  --hc-accent-bg: rgba(255, 138, 31, 0.14);
+  --hc-on-accent: #1a0e02;
+  --hc-danger: #ff6b63;
+  --hc-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+.tidy-hc *,
+.tidy-hc *::before,
+.tidy-hc *::after {
+  box-sizing: border-box;
+}
+.tidy-hc [hidden] {
+  display: none !important;
+}
+
+.tidy-hc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--hc-line);
+}
+.tidy-hc-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.tidy-hc-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--hc-accent);
+}
+.tidy-hc-close {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--hc-muted);
+  cursor: pointer;
+}
+.tidy-hc-close:hover {
+  background: var(--hc-raised);
+  color: var(--hc-text);
+}
+.tidy-hc-close svg {
+  width: 18px;
+  height: 18px;
   fill: currentColor;
 }
 
-.tidy-clean-status {
-  max-width: 260px;
-  margin-top: 4px;
-  padding: 0 16px;
-  color: var(--yt-sys-color-baseline--text-secondary, var(--yt-spec-text-secondary, #606060));
-  font-size: 12px;
-  line-height: 18px;
+.tidy-hc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  overflow-y: auto;
+  min-height: 0;
 }
-.tidy-clean-status:empty {
+
+.tidy-hc-sec {
+  color: var(--hc-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tidy-hc-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tidy-hc-pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--hc-line);
+  border-radius: 999px;
+  background: var(--hc-surface);
+  color: var(--hc-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.tidy-hc-pill input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.tidy-hc-pill:hover {
+  background: var(--hc-raised);
+  color: var(--hc-text);
+}
+.tidy-hc-pill:has(input:checked) {
+  border-color: var(--hc-accent);
+  background: var(--hc-accent-bg);
+  color: var(--hc-text);
+}
+
+.tidy-hc-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--hc-line);
+  border-radius: 9px;
+  background: var(--hc-surface);
+  color: var(--hc-text);
+  font: inherit;
+  font-size: 12.5px;
+}
+.tidy-hc-input::placeholder {
+  color: var(--hc-muted);
+}
+.tidy-hc-input:focus {
+  outline: none;
+  border-color: var(--hc-accent);
+}
+
+.tidy-hc-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+.tidy-hc-stats {
+  color: var(--hc-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.tidy-hc-bar-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.tidy-hc-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--hc-accent);
+  font: 500 12px/1 inherit;
+  cursor: pointer;
+}
+.tidy-hc-link:hover {
+  text-decoration: underline;
+}
+.tidy-hc-subtle {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--hc-line);
+  border-radius: 7px;
+  background: var(--hc-surface);
+  color: var(--hc-text);
+  font: 500 12px/1 inherit;
+  cursor: pointer;
+}
+.tidy-hc-subtle:hover:not(:disabled) {
+  background: var(--hc-raised);
+}
+.tidy-hc-subtle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tidy-hc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--hc-line);
+  border-radius: 10px;
+  background: var(--hc-surface);
+}
+.tidy-hc-list:empty {
   display: none;
+}
+.tidy-hc-empty {
+  padding: 14px 10px;
+  color: var(--hc-muted);
+  font-size: 12px;
+  text-align: center;
+}
+.tidy-hc-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.tidy-hc-row:hover {
+  background: var(--hc-raised);
+}
+.tidy-hc-row input {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--hc-accent);
+  cursor: pointer;
+}
+.tidy-hc-info {
+  flex: 1;
+  min-width: 0;
+}
+.tidy-hc-vtitle {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--hc-text);
+}
+.tidy-hc-vchan {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--hc-muted);
+}
+.tidy-hc-tag {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--hc-raised);
+  color: var(--hc-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tidy-hc-deep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--hc-text);
+  font-size: 12.5px;
+  cursor: pointer;
+  user-select: none;
+}
+.tidy-hc-deep input {
+  margin: 0;
+  accent-color: var(--hc-accent);
+  cursor: pointer;
+}
+.tidy-hc-note {
+  color: var(--hc-muted);
+  font-size: 11.5px;
+}
+
+.tidy-hc-prog {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tidy-hc-prog-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--hc-raised);
+  overflow: hidden;
+}
+.tidy-hc-prog-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--hc-accent);
+  transition: width 0.2s ease;
+}
+.tidy-hc-prog-text {
+  color: var(--hc-muted);
+  font-size: 12px;
+}
+
+.tidy-hc-status {
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--hc-accent-bg);
+  color: var(--hc-text);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.tidy-hc-status.error {
+  background: rgba(255, 107, 99, 0.14);
+  color: var(--hc-danger);
+}
+
+.tidy-hc-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--hc-line);
+  background: var(--hc-bg);
+}
+.tidy-hc-primary,
+.tidy-hc-danger,
+.tidy-hc-secondary {
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 9px;
+  font: 600 13px/1 inherit;
+  cursor: pointer;
+}
+.tidy-hc-primary {
+  flex: 1;
+  background: var(--hc-accent);
+  color: var(--hc-on-accent);
+}
+.tidy-hc-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.tidy-hc-primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tidy-hc-danger {
+  flex: 1;
+  background: var(--hc-danger);
+  color: #ffffff;
+}
+.tidy-hc-secondary {
+  border: 1px solid var(--hc-line);
+  background: var(--hc-surface);
+  color: var(--hc-text);
+}
+.tidy-hc-secondary:hover {
+  background: var(--hc-raised);
 }
