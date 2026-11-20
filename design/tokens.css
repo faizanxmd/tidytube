@@ -7,7 +7,8 @@
  * Scoped to .tidy-hn so nothing leaks into YouTube's own styles.
  */
 
-.tidy-hn {
+.tidy-hn,
+.tidy-ui {
   /* ── Color (dark, "instrument black × amber LED") ── */
   --color-bg: #0E0E0F;        /* page ground */
   --color-surface: #18181A;   /* inputs, search bar */

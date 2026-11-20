@@ -1,7 +1,7 @@
 /*
- * Tidy Tube Filters page (filters.html). Edits the junk categories that
- * js/junk.js matches with, and saves every change as you type. YouTube tabs
- * pick changes up straight away through chrome.storage.onChanged.
+ * Tidy Tube Filters page (filters.html).
+ * Simple ON/OFF toggles + chip editors (with optional bulk edit) for channels
+ * and title keywords. Saves automatically; open YouTube tabs update instantly.
  */
 (() => {
   "use strict";
@@ -11,69 +11,164 @@
   const list = $("list");
   const tpl = $("card");
 
-  let categories = []; // what's on screen, in junk.js's saved shape
+  let categories = [];
 
-  const lines = (text) => text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const splitLines = (text) => text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const splitQuick = (text) => text.split(/[\n,]/).map((l) => l.trim()).filter(Boolean);
   const plural = (n, word) => n + " " + word + (n === 1 ? "" : "s");
-
-  /* ---------------------------------------------------------------- */
-  /* Saving                                                            */
-  /* ---------------------------------------------------------------- */
 
   let saveTimer = 0;
   function save() {
     $("saved").textContent = "Saving…";
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
-      chrome.storage.local.set({ [junk.KEY]: { categories } }, () => {
-        $("saved").textContent = chrome.runtime.lastError ? "Couldn't save" : "Saved";
+      junk.save(categories, (err) => {
+        $("saved").textContent = err ? "Couldn't save" : "Saved";
       });
-    }, 400);
+    }, 300);
   }
 
-  /* ---------------------------------------------------------------- */
-  /* A category card                                                   */
-  /* ---------------------------------------------------------------- */
+  function setupField(fieldEl, c, key, onChange) {
+    const modeBtn = fieldEl.querySelector(".mode-btn");
+    const chipView = fieldEl.querySelector(".chip-view");
+    const addInput = fieldEl.querySelector(".add-input");
+    const addBtn = fieldEl.querySelector(".add-btn");
+    const chipsBox = fieldEl.querySelector(".chips");
+    const bulk = fieldEl.querySelector(".bulk");
+    const errorEl = fieldEl.querySelector(".error");
+
+    let bulkMode = false;
+
+    function validate() {
+      if (!errorEl) return;
+      const bad = c[key]
+        .map((w, i) => [i + 1, junk.problem(w)])
+        .filter(([, p]) => p)
+        .map(([n, p]) => "Item " + n + ": " + p);
+      errorEl.hidden = !bad.length;
+      errorEl.textContent = bad.length ? bad.join(" · ") + " (skipped)" : "";
+    }
+
+    function renderChips() {
+      chipsBox.replaceChildren();
+      const items = c[key];
+      if (!items.length) {
+        const empty = document.createElement("span");
+        empty.className = "chips-empty";
+        empty.textContent =
+          key === "channels" ? "No channels added yet." : "No keywords added yet.";
+        chipsBox.append(empty);
+      } else {
+        const frag = document.createDocumentFragment();
+        items.forEach((val, idx) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          if (val.startsWith("/") && val.lastIndexOf("/") > 0) chip.classList.add("regex");
+          if (key === "words" && junk.problem(val)) chip.classList.add("bad");
+
+          const txt = document.createElement("span");
+          txt.className = "chip-text";
+          txt.textContent = val;
+          txt.title = val;
+
+          const x = document.createElement("button");
+          x.type = "button";
+          x.className = "chip-x";
+          x.setAttribute("aria-label", "Remove " + val);
+          x.textContent = "×";
+          x.addEventListener("click", () => {
+            c[key].splice(idx, 1);
+            renderChips();
+            validate();
+            onChange();
+          });
+
+          chip.append(txt, x);
+          frag.append(chip);
+        });
+        chipsBox.append(frag);
+      }
+      validate();
+    }
+
+    function addFromInput() {
+      const vals = splitQuick(addInput.value);
+      if (!vals.length) return;
+      const existing = new Set(c[key].map((v) => v.toLowerCase()));
+      let added = false;
+      for (const v of vals) {
+        if (!existing.has(v.toLowerCase())) {
+          c[key].push(v);
+          existing.add(v.toLowerCase());
+          added = true;
+        }
+      }
+      addInput.value = "";
+      if (added) {
+        renderChips();
+        onChange();
+      }
+      addInput.focus();
+    }
+
+    addBtn.addEventListener("click", addFromInput);
+    addInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addFromInput();
+      }
+    });
+
+    bulk.addEventListener("input", () => {
+      c[key] = splitLines(bulk.value);
+      validate();
+      onChange();
+    });
+
+    modeBtn.addEventListener("click", () => {
+      bulkMode = !bulkMode;
+      chipView.hidden = bulkMode;
+      bulk.hidden = !bulkMode;
+      modeBtn.textContent = bulkMode ? "Done" : "Bulk edit";
+      if (bulkMode) {
+        bulk.value = c[key].join("\n");
+        bulk.focus();
+      } else {
+        renderChips();
+      }
+    });
+
+    renderChips();
+  }
 
   function card(c, open) {
     const el = tpl.content.firstElementChild.cloneNode(true);
     const q = (s) => el.querySelector(s);
+    const enabledBox = q(".enabled");
     const name = q(".name");
-    const switches = { history: q(".history"), hide: q(".hide"), tell: q(".tell") };
     const more = q(".more");
     const body = q(".body");
-    const channels = q(".channels");
-    const words = q(".words");
-    const error = q(".error");
 
+    enabledBox.checked = !!c.enabled;
     name.value = c.name;
-    for (const [k, box] of Object.entries(switches)) box.checked = !!c[k];
-    channels.value = c.channels.join("\n");
-    words.value = c.words.join("\n");
 
-    // Music and Mixes also catch what YouTube itself marks; they can be
-    // switched off but not deleted
     if (c.builtin) {
+      q(".badge-builtin").hidden = false;
       const note = q(".builtin");
       note.hidden = false;
       note.textContent =
         c.builtin === "music"
-          ? "Built in: also catches what YouTube marks as music (the note icon, artist channels, albums, “Official video” titles, “Artist - Topic” channels). Add your own below."
-          : "Built in: also catches YouTube's Mix playlists. Add your own below.";
+          ? "Automatically detects YouTube's music note icon, Official Artist channels, albums, “Artist - Topic” tracks, and music video titles. Add extra channels or keywords below if anything slips through."
+          : "Automatically detects YouTube Mix and auto-radio playlists. Add extra channels or keywords below if needed.";
       q(".delete").remove();
     }
 
     function refresh() {
-      q(".count").textContent =
-        (c.builtin ? "built in + " : "") +
-        plural(c.channels.length, "channel") + " · " + plural(c.words.length, "word");
-      el.classList.toggle("idle", !(c.history || c.hide || c.tell));
-      const bad = c.words
-        .map((w, i) => [i + 1, junk.problem(w)])
-        .filter(([, p]) => p)
-        .map(([n, p]) => "Line " + n + ": " + p);
-      error.hidden = !bad.length;
-      error.textContent = bad.length ? bad.join(" · ") + ". These lines are skipped." : "";
+      const counts = [];
+      if (c.channels.length) counts.push(plural(c.channels.length, "channel"));
+      if (c.words.length) counts.push(plural(c.words.length, "keyword"));
+      q(".count").textContent = counts.length ? counts.join(" · ") : c.builtin ? "auto" : "empty";
+      el.classList.toggle("idle", !c.enabled);
     }
 
     function setOpen(v) {
@@ -81,40 +176,38 @@
       more.setAttribute("aria-expanded", String(v));
     }
 
+    const onChange = () => {
+      refresh();
+      save();
+      test();
+    };
+
+    enabledBox.addEventListener("change", () => {
+      c.enabled = enabledBox.checked;
+      onChange();
+    });
+
     name.addEventListener("input", () => {
       c.name = name.value.trim() || "Untitled";
       save();
       test();
     });
-    for (const [k, box] of Object.entries(switches)) {
-      box.addEventListener("change", () => {
-        c[k] = box.checked;
-        refresh();
+
+    more.addEventListener("click", () => setOpen(body.hidden));
+
+    setupField(q('[data-kind="channels"]'), c, "channels", onChange);
+    setupField(q('[data-kind="words"]'), c, "words", onChange);
+
+    const del = q(".delete");
+    if (del) {
+      del.addEventListener("click", () => {
+        if (!confirm("Delete “" + c.name + "”?")) return;
+        categories = categories.filter((x) => x !== c);
+        el.remove();
         save();
         test();
       });
     }
-    channels.addEventListener("input", () => {
-      c.channels = lines(channels.value);
-      refresh();
-      save();
-      test();
-    });
-    words.addEventListener("input", () => {
-      c.words = lines(words.value);
-      refresh();
-      save();
-      test();
-    });
-    more.addEventListener("click", () => setOpen(body.hidden));
-    const del = q(".delete");
-    if (del) del.addEventListener("click", () => {
-      if (!confirm("Delete “" + c.name + "”?")) return;
-      categories = categories.filter((x) => x !== c);
-      el.remove();
-      save();
-      test();
-    });
 
     refresh();
     setOpen(open);
@@ -126,17 +219,11 @@
     test();
   }
 
-  /* ---------------------------------------------------------------- */
-  /* Page actions                                                      */
-  /* ---------------------------------------------------------------- */
-
   $("add").addEventListener("click", () => {
     const c = {
       id: "c" + Date.now().toString(36),
-      name: "New category",
-      history: true,
-      hide: false,
-      tell: false,
+      name: "New filter",
+      enabled: true,
       channels: [],
       words: [],
     };
@@ -150,7 +237,7 @@
   });
 
   $("reset").addEventListener("click", () => {
-    if (!confirm("Go back to the starting categories? Your changes are lost.")) return;
+    if (!confirm("Restore default filters? Your custom filters will be removed.")) return;
     chrome.storage.local.remove(junk.KEY, () => {
       categories = JSON.parse(JSON.stringify(junk.DEFAULTS));
       render();
@@ -158,18 +245,33 @@
     });
   });
 
+  $("open_history").addEventListener("click", () => {
+    chrome.runtime.sendMessage({ type: "history:open" });
+  });
+
   function test() {
     const title = $("t-title").value.trim();
     const channel = $("t-channel").value.trim();
     const out = $("t-out");
     if (!title && !channel) {
-      out.textContent = "Type a title or channel to see which category catches it.";
+      out.textContent = "Type a title or channel to see if any filter catches it.";
       return;
     }
     const hit = junk.test(title, channel, categories);
     out.replaceChildren();
-    if (hit) out.append("Caught by ", Object.assign(document.createElement("b"), { textContent: hit }), ".");
-    else out.textContent = "None of your switched-on categories catch this.";
+    if (hit) {
+      out.append("Caught by ", Object.assign(document.createElement("b"), { textContent: hit.name }));
+      if (hit.enabled) {
+        const s = document.createElement("span");
+        s.className = "hit-on";
+        s.textContent = " — active (hidden on YouTube).";
+        out.append(s);
+      } else {
+        out.append(" — currently off (turn it on above to hide it).");
+      }
+    } else {
+      out.textContent = "Not caught by any filter.";
+    }
   }
   $("t-title").addEventListener("input", test);
   $("t-channel").addEventListener("input", test);

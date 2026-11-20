@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "Tidy Tube",
   "short_name": "Tidy Tube",
-  "description": "Hide music, Mixes and Shorts from YouTube, filter out your own junk and clean it from your history, and browse what Hacker News recommends instead.",
-  "version": "0.11.0",
+  "description": "Hide Shorts, music, Mixes and distractions on YouTube, clean your watch history on demand, and browse what Hacker News recommends.",
+  "version": "0.12.0",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -32,7 +32,6 @@
         "js/junk.js",
         "js/guide.js",
         "js/ytmenu.js",
-        "js/tell.js",
         "js/history.js"
       ],
       "run_at": "document_start"

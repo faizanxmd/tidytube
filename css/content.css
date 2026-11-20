@@ -3,28 +3,17 @@
  *
  * The content script mirrors user settings as presence-attributes on <html>
  * (e.g. <html tidy-hide-mixes>). Everything here is inert until the matching
- * attribute exists, so toggling a setting is instant and there is no flash of
- * hidden content on page load.
+ * attribute exists, so toggling a setting is instant with no flicker.
  *
  * Markers set by js/content.js on elements only their text identifies:
  *   data-tidy-music       video, shelf or chip is music
  *   data-tidy-mix         playlist, shelf or chip is Mixes
  *   data-tidy-shorts      chip is Shorts
- *   data-tidy-junk        video a Filters category hides (js/junk.js)
+ *   data-tidy-junk        video an enabled filter matches (js/junk.js)
  */
 
 /* ------------------------------------------------------------------ */
-/* Gap-free feed reflow.                                               */
-/* Hiding grid items with display:none leaves holes: YouTube's feed is */
-/* chopped into segments by full-width shelves (ytd-rich-section-      */
-/* renderer), and it won't pull videos across a shelf to backfill a    */
-/* segment left short by a hidden card — so you get partial rows and   */
-/* stranded single videos.                                             */
-/*                                                                     */
-/* Re-lay the grid as a real CSS grid with dense auto-flow: hidden     */
-/* items drop out of flow entirely and the remaining videos pack into  */
-/* every slot. Column count follows YouTube's own responsive variable, */
-/* so this stays correct at every window width.                        */
+/* Gap-free feed reflow                                                */
 /* ------------------------------------------------------------------ */
 html:is([tidy-hide-music], [tidy-hide-mixes], [tidy-hide-shorts], [tidy-hide-junk])
   ytd-rich-grid-renderer #contents.ytd-rich-grid-renderer {
@@ -34,9 +23,6 @@ html:is([tidy-hide-music], [tidy-hide-mixes], [tidy-hide-shorts], [tidy-hide-jun
   column-gap: var(--ytd-rich-grid-item-margin, 16px) !important;
   justify-content: center !important;
 }
-/* NOTE: scoped to #contents.ytd-rich-grid-renderer — shelves like
-   "Explore more topics" have their own inner #contents, and un-capping
-   the items inside them blows those cards up to full width. */
 html:is([tidy-hide-music], [tidy-hide-mixes], [tidy-hide-shorts], [tidy-hide-junk])
   #contents.ytd-rich-grid-renderer > ytd-rich-item-renderer {
   width: auto !important;
@@ -44,18 +30,13 @@ html:is([tidy-hide-music], [tidy-hide-mixes], [tidy-hide-shorts], [tidy-hide-jun
   margin-left: 0 !important;
   margin-right: 0 !important;
 }
-/* full-width rows keep spanning every column */
 html:is([tidy-hide-music], [tidy-hide-mixes], [tidy-hide-shorts], [tidy-hide-junk])
   #contents.ytd-rich-grid-renderer > :is(ytd-rich-section-renderer, ytd-rich-shelf-renderer, ytd-continuation-item-renderer) {
   grid-column: 1 / -1 !important;
 }
 
 /* ------------------------------------------------------------------ */
-/* Music — YouTube's own note icon on the duration badge (12px and     */
-/* 24px paths), official artist channels, album playlists, the sidebar */
-/* links, plus whatever js/content.js marks. Not on the History page   */
-/* (html[tidy-on-history]): it lists what you watched, and hiding     */
-/* most of it keeps YouTube loading more forever                       */
+/* Music                                                               */
 /* ------------------------------------------------------------------ */
 html[tidy-hide-music]:not([tidy-on-history]) :is(ytd-rich-item-renderer, yt-lockup-view-model, ytd-video-renderer, ytd-compact-video-renderer):has(path[d^="M5.5 1.383V6.88"], path[d^="M11 2.766v10.99"], .badge-style-type-verified-artist, [aria-label="Official Artist Channel"], a[href*="list=OLAK5uy_"]),
 html[tidy-hide-music] :is(ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer):has(a[href*="music.youtube.com"], a[href="/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ"]),
@@ -64,7 +45,7 @@ html[tidy-hide-music]:not([tidy-on-history]) [data-tidy-music] {
 }
 
 /* ------------------------------------------------------------------ */
-/* Mixes — feed, search, watch sidebar, end-of-video wall              */
+/* Mixes                                                               */
 /* ------------------------------------------------------------------ */
 html[tidy-hide-mixes]:not([tidy-on-history]) :is(ytd-rich-item-renderer, yt-lockup-view-model, ytd-compact-video-renderer):has(a[href*="list=RD"], a[href*="start_radio=1"]),
 html[tidy-hide-mixes] :is(ytd-radio-renderer, ytd-compact-radio-renderer),
@@ -74,16 +55,14 @@ html[tidy-hide-mixes]:not([tidy-on-history]) [data-tidy-mix] {
 }
 
 /* ------------------------------------------------------------------ */
-/* Your Filters categories with "Hide while browsing" (filters.html).   */
-/* Not on the History page, which shows everything you watched         */
+/* Enabled filter categories (not on History, which shows everything)  */
 /* ------------------------------------------------------------------ */
 html[tidy-hide-junk]:not([tidy-on-history]) [data-tidy-junk] {
   display: none !important;
 }
 
 /* ------------------------------------------------------------------ */
-/* Shorts — feed, search, watch sidebar, channel tabs, notifications,  */
-/* search chips, and the sidebar links                                 */
+/* Shorts                                                              */
 /* ------------------------------------------------------------------ */
 html[tidy-hide-shorts] :is(ytd-reel-shelf-renderer, ytd-rich-shelf-renderer[is-shorts]),
 html[tidy-hide-shorts] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
@@ -97,15 +76,13 @@ html[tidy-hide-shorts] [data-tidy-shorts] {
 }
 
 /* ------------------------------------------------------------------ */
-/* YouTube's ⋮ menu (js/ytmenu.js) stays invisible while Tidy Tube uses it, */
-/* and cards it answered ("Video removed" notices from Not interested,  */
-/* entries removed from history) stay hidden                           */
+/* Watch History cleaner: keep YouTube's popup menu invisible while    */
+/* removing entries, and hide entries once removed                     */
 /* ------------------------------------------------------------------ */
 html[tidy-busy] ytd-popup-container tp-yt-iron-dropdown {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-[data-tidy-told],
 [data-tidy-removed] {
   display: none !important;
 }

@@ -36,8 +36,8 @@ const MODES = {
 };
 
 // The extension was called "kempt" before 0.9.0: move what it saved under
-// the old key names to the new ones, once.
-const RENAMED = { kempt_hn: "tidy_hn", kempt_told: "tidy_told" };
+// the old key name to the new one, once.
+const RENAMED = { kempt_hn: "tidy_hn" };
 const migrated = (async () => {
   const got = await chrome.storage.local.get(Object.keys(RENAMED));
   const moved = {};
@@ -431,6 +431,11 @@ async function handle(msg, sender) {
     else await chrome.tabs.update(sender.tab.id, { url });
     return { ok: true };
   }
+  if (msg.type === "history:open") {
+    const url = "https://www.youtube.com/feed/history#tidy-clean";
+    await chrome.tabs.create({ url, active: true });
+    return { ok: true };
+  }
   await load();
   switch (msg.type) {
     case "hn:feed":
@@ -492,7 +497,7 @@ async function handle(msg, sender) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, reply) => {
-  if (!msg || typeof msg.type !== "string" || !msg.type.startsWith("hn:")) return false;
+  if (!msg || typeof msg.type !== "string" || (!msg.type.startsWith("hn:") && msg.type !== "history:open")) return false;
   handle(msg, sender).then(reply, (e) => reply({ error: String(e) }));
   return true; // async reply
 });

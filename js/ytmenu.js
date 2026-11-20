@@ -1,9 +1,9 @@
 /*
  * Tidy Tube: drive YouTube's own ⋮ menu on a card, the way you would by hand.
  *
- * Shared by js/tell.js ("Not interested") and js/history.js ("Remove from
- * watch history"). Content scripts share one isolated world, so this hangs
- * off globalThis.tidyMenu for the files loaded after it.
+ * Used by js/history.js ("Remove from watch history"). Content scripts share
+ * one isolated world, so this hangs off globalThis.tidyMenu for scripts loaded
+ * after it.
  *
  * The menu is made invisible (html[tidy-busy], css/content.css) while
  * Tidy Tube uses it, so nothing flashes on screen.

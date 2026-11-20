@@ -3,22 +3,70 @@
 <head>
   <meta charset="utf-8">
   <title>Tidy Tube</title>
+  <link rel="stylesheet" href="design/tokens.css">
   <link rel="stylesheet" href="css/popup.css">
 </head>
-<body>
-  <h1>Tidy Tube</h1>
+<body class="tidy-ui">
+  <header class="head">
+    <h1>Tidy Tube</h1>
+    <span class="active-badge" id="active_count"></span>
+  </header>
 
-  <h2>Filters</h2>
-  <button type="button" class="action" id="filters_open">Edit filters</button>
-  <p class="note">Music, Mixes and your own categories of channels and title words. Clean them out of your history, hide them, or tell YouTube you're not interested.</p>
+  <section class="sec">
+    <div class="sec-head">
+      <h2>Hide on YouTube</h2>
+      <button type="button" class="text-link" id="filters_open">Customize →</button>
+    </div>
 
-  <h2 class="gap">Hide on YouTube</h2>
-  <label class="tile"><input type="checkbox" id="hide_shorts"><span class="name">Shorts</span><span class="state"></span></label>
+    <div class="list" id="hide_list">
+      <label class="row">
+        <span class="row-label">Shorts</span>
+        <input type="checkbox" id="hide_shorts">
+        <span class="toggle" aria-hidden="true"></span>
+      </label>
+    </div>
+  </section>
 
-  <h2 class="gap">Hacker News</h2>
-  <label class="tile"><input type="checkbox" id="show_hn"><span class="name">Show in sidebar</span><span class="state"></span></label>
-  <button type="button" class="action" id="hn_open">Open Hacker News</button>
-  <p class="note"><span id="hn_stats"></span> <button type="button" id="hn_reset" hidden>Reset</button></p>
+  <section class="sec">
+    <h2>Watch history</h2>
+    <button type="button" class="tool-btn" id="history_open">
+      <span class="tool-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M15 16h4v2h-4zm0-8h7v2h-7zm0 4h6v2h-6zM3 18c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V8H3v10zM14 5h-3l-1-1H6L5 5H2v2h12z"/></svg>
+      </span>
+      <span class="tool-copy">
+        <span class="tool-title">Clean watch history</span>
+        <span class="tool-sub">One-time preview &amp; remove tool</span>
+      </span>
+      <span class="arrow" aria-hidden="true">→</span>
+    </button>
+  </section>
+
+  <section class="sec">
+    <h2>Hacker News</h2>
+    <button type="button" class="hn-btn" id="hn_open">
+      <span class="hn-badge" aria-hidden="true">HN</span>
+      <span class="tool-copy">
+        <span class="tool-title">Open Hacker News</span>
+        <span class="tool-sub" id="hn_stats">Curated talks, lectures &amp; explainers</span>
+      </span>
+      <span class="arrow" aria-hidden="true">→</span>
+    </button>
+
+    <div class="list compact">
+      <label class="row">
+        <span class="row-label">Show in YouTube sidebar</span>
+        <input type="checkbox" id="show_hn">
+        <span class="toggle" aria-hidden="true"></span>
+      </label>
+    </div>
+
+    <p class="foot-note" id="hn_learn" hidden>
+      <span id="hn_learn_text"></span>
+      <button type="button" class="text-link" id="hn_reset">Reset</button>
+    </p>
+  </section>
+
+  <script src="js/junk.js"></script>
   <script src="js/popup.js"></script>
 </body>
 </html>

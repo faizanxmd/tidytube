@@ -3,30 +3,29 @@
  *
  * Runs at document_start. Two responsibilities:
  *   1. Mirror settings from chrome.storage as presence-attributes on <html>
- *      so css/content.css can hide things declaratively (no flicker).
- *   2. Mark what CSS cannot identify: videos your filters match (js/junk.js),
- *      and shelves and chips only recognisable by their text.
+ *      so css/content.css and css/guide.css react declaratively (no flicker).
+ *   2. Mark what CSS cannot identify: videos your enabled filters match
+ *      (js/junk.js), plus shelves and chips only recognisable by their text.
  */
 (() => {
   "use strict";
 
-  // Music and Mixes hiding come from your filters (js/junk.js sets those attributes)
   const DEFAULTS = {
     hide_shorts: true,
     show_hn: true,
   };
 
   const html = document.documentElement;
-
-  // sync storage when available, with local as fallback (mirrors what
-  // popup.js does, so both always read/write the same place)
   const store =
     chrome.storage && chrome.storage.sync ? chrome.storage.sync : chrome.storage.local;
 
-  const attrName = (key) => "tidy-" + key.replace(/_/g, "-");
-
   function applySetting(key, on) {
-    html.toggleAttribute(attrName(key), !!on);
+    if (key === "show_hn") {
+      // Inverse attribute: sidebar entry is visible by default unless explicitly off
+      html.toggleAttribute("tidy-hide-hn", !on);
+    } else {
+      html.toggleAttribute("tidy-" + key.replace(/_/g, "-"), !!on);
+    }
   }
 
   /* ---------------------------------------------------------------- */
@@ -42,13 +41,8 @@
   const CHIPS = "yt-chip-cloud-chip-renderer, chip-view-model";
   const ANY = [CARDS, SHELVES, CHIPS].join(",");
 
-  // YouTube recycles elements in place, so each one is re-decided whenever
-  // anything inside it changes rather than remembered. Toggling attributes
-  // doesn't trip the childList observer below.
   function decide(e) {
     if (e.matches(CARDS)) {
-      // your filters (js/junk.js): music and Mixes only text gives away, and
-      // anything a category with Hide matches
       const junk = globalThis.tidyJunk;
       if (!junk) return;
       e.toggleAttribute("data-tidy-music", junk.musicByText(e));
@@ -67,9 +61,6 @@
     }
   }
 
-  // Pages like History grow to thousands of cards, so after the first pass
-  // only what changed is re-decided: the cards around each mutation (a card
-  // nested in another marks both) and any cards inside what was added.
   function scan(touched, added) {
     const todo = new Set();
     if (!touched) {
@@ -82,13 +73,10 @@
       }
     }
     for (const e of todo) decide(e);
-    // js/guide.js, js/tell.js and js/history.js re-check after every pass
     window.dispatchEvent(new Event("tidy-scan"));
   }
 
-  // the History page shows what you watched, music included (hiding it there
-  // also left YouTube's "load more" spinner on screen, so it never stopped
-  // loading); css/content.css keys off this
+  // History always shows everything you watched so you can inspect and clean it
   function markPage() {
     html.toggleAttribute("tidy-on-history", location.pathname === "/feed/history");
   }
@@ -108,10 +96,9 @@
   });
 
   function startObserving() {
-    // Debounced scan of what changed; new cards arrive constantly while scrolling
     let scheduled = false;
-    let touched = new Set(); // where something changed
-    let added = new Set(); // new subtrees, which are looked inside as well
+    let touched = new Set();
+    let added = new Set();
     new MutationObserver((records) => {
       for (const r of records) {
         if (r.target.nodeType === 1) touched.add(r.target);
@@ -132,12 +119,10 @@
       }, 100);
     }).observe(document.body, { childList: true, subtree: true });
 
-    // YouTube is a single-page app; this event fires on every route change
     window.addEventListener("yt-navigate-finish", () => {
       markPage();
       scan();
     });
-    // js/junk.js loaded or changed your filters
     window.addEventListener("tidy-filters", () => scan());
     markPage();
     scan();
