@@ -1,12 +1,12 @@
 /*
- * kempt: drive YouTube's own ⋮ menu on a card, the way you would by hand.
+ * Tidy Tube: drive YouTube's own ⋮ menu on a card, the way you would by hand.
  *
  * Shared by js/tell.js ("Not interested") and js/history.js ("Remove from
  * watch history"). Content scripts share one isolated world, so this hangs
- * off globalThis.kemptMenu for the files loaded after it.
+ * off globalThis.tidyMenu for the files loaded after it.
  *
- * The menu is made invisible (html[kempt-busy], css/content.css) while
- * kempt uses it, so nothing flashes on screen.
+ * The menu is made invisible (html[tidy-busy], css/content.css) while
+ * Tidy Tube uses it, so nothing flashes on screen.
  */
 (() => {
   "use strict";
@@ -63,7 +63,7 @@
     }
     const button = card.querySelector(MENU_BUTTON);
     if (!button) return "no-button";
-    html.setAttribute("kempt-busy", "");
+    html.setAttribute("tidy-busy", "");
     try {
       button.click();
       const item = await findItem(pattern, 2500);
@@ -76,7 +76,7 @@
     } finally {
       await sleep(400);
       if (openDropdown()) closeMenu();
-      html.removeAttribute("kempt-busy");
+      html.removeAttribute("tidy-busy");
     }
   }
 
@@ -88,11 +88,5 @@
     return q.get("v") || q.get("list");
   }
 
-  // the same rules css/content.css hides music and Mixes by
-  const MUSIC =
-    ':has(path[d^="M5.5 1.383V6.88"], path[d^="M11 2.766v10.99"], .badge-style-type-verified-artist,' +
-    ' [aria-label="Official Artist Channel"], a[href*="list=OLAK5uy_"]), [data-kempt-music]';
-  const MIX = ':has(a[href*="list=RD"], a[href*="start_radio=1"]), [data-kempt-mix]';
-
-  globalThis.kemptMenu = { pick, cardKey, sleep, MUSIC, MIX };
+  globalThis.tidyMenu = { pick, cardKey, sleep };
 })();

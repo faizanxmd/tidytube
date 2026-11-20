@@ -15,7 +15,7 @@ from the export's embeddings (what the video is about). Without it, only the
 co-recommendation graph is used, which is mostly single shared commenters and
 so much noisier.
 
-Writes a compact file the extension bundles, so kempt never calls out to
+Writes a compact file the extension bundles, so Tidy Tube never calls out to
 hackertube.org at runtime (nothing about what you watch leaves the browser).
 
 Output shape (arrays instead of objects to keep the file small):
@@ -54,7 +54,7 @@ def read_export(src):
     if src:
         data = open(src, "rb").read()
     else:
-        req = urllib.request.Request(EXPORT_URL, headers={"User-Agent": "kempt-build"})
+        req = urllib.request.Request(EXPORT_URL, headers={"User-Agent": "tidy-build"})
         data = urllib.request.urlopen(req, timeout=120).read()
     zf = zipfile.ZipFile(io.BytesIO(data))
 

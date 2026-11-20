@@ -1,5 +1,5 @@
 /*
- * kempt: the "Hacker News" sidebar entry (js/guide.js), sized like YouTube's
+ * Tidy Tube: the "Hacker News" sidebar entry (js/guide.js), sized like YouTube's
  * own guide entries (measured from its computed styles) and coloured with
  * its theme variables, so it sits in the sidebar in light and dark.
  * YouTube renamed --yt-spec-text-primary to --yt-sys-color-baseline--text-primary
@@ -8,11 +8,11 @@
  * colour, so it follows whichever theme is on.
  */
 
-html:not([kempt-show-hn]) .kempt-guide {
+html:not([tidy-show-hn]) .tidy-guide {
   display: none !important;
 }
 
-.kempt-guide {
+.tidy-guide {
   display: flex;
   align-items: center;
   gap: 24px;
@@ -26,25 +26,25 @@ html:not([kempt-show-hn]) .kempt-guide {
   line-height: 20px;
   text-decoration: none;
 }
-.kempt-guide:hover,
-.kempt-guide:focus-visible {
+.tidy-guide:hover,
+.tidy-guide:focus-visible {
   outline: none;
   background: var(--yt-sys-color-baseline--additive-background, color-mix(in srgb, currentColor 7%, transparent));
 }
-.kempt-guide svg {
+.tidy-guide svg {
   flex: none;
   width: 24px;
   height: 24px;
   fill: currentColor;
 }
-.kempt-guide span {
+.tidy-guide span {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
 /* collapsed sidebar: icon over a small label, 64x76 like its neighbours */
-.kempt-guide.kempt-guide-mini {
+.tidy-guide.tidy-guide-mini {
   flex-direction: column;
   gap: 6px;
   width: 64px;
@@ -54,26 +54,22 @@ html:not([kempt-show-hn]) .kempt-guide {
   font-size: 10px;
   line-height: 16px;
 }
-.kempt-guide-mini span {
+.tidy-guide-mini span {
   max-width: 100%;
 }
 
 /* ------------------------------------------------------------------ */
-/* "Remove music from history" (js/history.js), sized like the History */
-/* page's own action buttons beside it                                 */
+/* "Clean up history" (js/history.js), sized like the History page's own */
+/* action buttons beside it                                            */
 /* ------------------------------------------------------------------ */
 
-html:not([kempt-hide-music]) #kempt-clean {
-  display: none !important;
-}
-
-#kempt-clean {
+.tidy-clean {
   margin-bottom: 0;
   color: var(--yt-sys-color-baseline--text-primary, var(--yt-spec-text-primary, #0f0f0f));
   font-family: "Roboto", "Arial", sans-serif;
 }
 
-.kempt-clean-btn {
+.tidy-clean-btn {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -88,19 +84,19 @@ html:not([kempt-hide-music]) #kempt-clean {
   cursor: pointer;
 }
 /* YouTube's text buttons hover at 20% of the text colour in both themes */
-.kempt-clean-btn:hover,
-.kempt-clean-btn:focus-visible {
+.tidy-clean-btn:hover,
+.tidy-clean-btn:focus-visible {
   outline: none;
   background: color-mix(in srgb, currentColor 20%, transparent);
 }
-.kempt-clean-btn svg {
+.tidy-clean-btn svg {
   flex: none;
   width: 24px;
   height: 24px;
   fill: currentColor;
 }
 
-.kempt-clean-status {
+.tidy-clean-status {
   max-width: 260px;
   margin-top: 4px;
   padding: 0 16px;
@@ -108,6 +104,6 @@ html:not([kempt-hide-music]) #kempt-clean {
   font-size: 12px;
   line-height: 18px;
 }
-.kempt-clean-status:empty {
+.tidy-clean-status:empty {
   display: none;
 }

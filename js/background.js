@@ -1,8 +1,8 @@
 /*
- * kempt background: Hacker News picks.
+ * Tidy Tube background: Hacker News picks.
  *
  * Holds the bundled HackerTube catalogue (data/hackertube.json), answers the
- * Hacker News page (hn.html) and keeps what kempt learns. Everything is local:
+ * Hacker News page (hn.html) and keeps what Tidy Tube learns. Everything is local:
  * what you watch only ever updates chrome.storage.local.
  *
  * Taste model, deliberately small:
@@ -17,7 +17,7 @@
  */
 "use strict";
 
-const STATE_KEY = "kempt_hn";
+const STATE_KEY = "tidy_hn";
 const MAX_WATCHED = 400;
 const MAX_SHOWN = 3000;
 
@@ -35,6 +35,18 @@ const MODES = {
   deep: { base: (r) => 1 + r[STRONG], keep: isGem },
 };
 
+// The extension was called "kempt" before 0.9.0: move what it saved under
+// the old key names to the new ones, once.
+const RENAMED = { kempt_hn: "tidy_hn", kempt_told: "tidy_told" };
+const migrated = (async () => {
+  const got = await chrome.storage.local.get(Object.keys(RENAMED));
+  const moved = {};
+  for (const [from, to] of Object.entries(RENAMED)) if (got[from] !== undefined) moved[to] = got[from];
+  if (!Object.keys(moved).length) return;
+  await chrome.storage.local.set(moved);
+  await chrome.storage.local.remove(Object.keys(RENAMED));
+})();
+
 let data = null;
 let state = null; // { aff, watched, blocked, shown }
 
@@ -50,6 +62,7 @@ async function load() {
     data = d;
   }
   if (!state) {
+    await migrated;
     const got = await chrome.storage.local.get(STATE_KEY);
     state = Object.assign({ aff: {}, watched: [], blocked: [], shown: {} }, got[STATE_KEY]);
   }
@@ -452,6 +465,9 @@ async function handle(msg, sender) {
           .filter((i) => i !== undefined)
           .map(card),
       };
+    case "hn:known":
+      // which of these videos are in the catalogue (js/history.js keeps them)
+      return { known: (msg.vids || []).filter((v) => data.byVid.has(v)) };
     case "hn:watch":
       watched(msg.vid);
       return { ok: true };

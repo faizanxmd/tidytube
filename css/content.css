@@ -1,15 +1,16 @@
 /*
- * kempt content styles.
+ * Tidy Tube content styles.
  *
  * The content script mirrors user settings as presence-attributes on <html>
- * (e.g. <html kempt-hide-mixes>). Everything here is inert until the matching
+ * (e.g. <html tidy-hide-mixes>). Everything here is inert until the matching
  * attribute exists, so toggling a setting is instant and there is no flash of
  * hidden content on page load.
  *
  * Markers set by js/content.js on elements only their text identifies:
- *   data-kempt-music       video, shelf or chip is music
- *   data-kempt-mix         playlist, shelf or chip is Mixes
- *   data-kempt-shorts      chip is Shorts
+ *   data-tidy-music       video, shelf or chip is music
+ *   data-tidy-mix         playlist, shelf or chip is Mixes
+ *   data-tidy-shorts      chip is Shorts
+ *   data-tidy-junk        video a Filters category hides (js/junk.js)
  */
 
 /* ------------------------------------------------------------------ */
@@ -25,7 +26,7 @@
 /* every slot. Column count follows YouTube's own responsive variable, */
 /* so this stays correct at every window width.                        */
 /* ------------------------------------------------------------------ */
-html:is([kempt-hide-music], [kempt-hide-mixes], [kempt-hide-shorts])
+html:is([tidy-hide-music], [tidy-hide-mixes], [tidy-hide-shorts], [tidy-hide-junk])
   ytd-rich-grid-renderer #contents.ytd-rich-grid-renderer {
   display: grid !important;
   grid-template-columns: repeat(var(--ytd-rich-grid-items-per-row, 3), minmax(0, 1fr)) !important;
@@ -36,7 +37,7 @@ html:is([kempt-hide-music], [kempt-hide-mixes], [kempt-hide-shorts])
 /* NOTE: scoped to #contents.ytd-rich-grid-renderer — shelves like
    "Explore more topics" have their own inner #contents, and un-capping
    the items inside them blows those cards up to full width. */
-html:is([kempt-hide-music], [kempt-hide-mixes], [kempt-hide-shorts])
+html:is([tidy-hide-music], [tidy-hide-mixes], [tidy-hide-shorts], [tidy-hide-junk])
   #contents.ytd-rich-grid-renderer > ytd-rich-item-renderer {
   width: auto !important;
   max-width: none !important;
@@ -44,7 +45,7 @@ html:is([kempt-hide-music], [kempt-hide-mixes], [kempt-hide-shorts])
   margin-right: 0 !important;
 }
 /* full-width rows keep spanning every column */
-html:is([kempt-hide-music], [kempt-hide-mixes], [kempt-hide-shorts])
+html:is([tidy-hide-music], [tidy-hide-mixes], [tidy-hide-shorts], [tidy-hide-junk])
   #contents.ytd-rich-grid-renderer > :is(ytd-rich-section-renderer, ytd-rich-shelf-renderer, ytd-continuation-item-renderer) {
   grid-column: 1 / -1 !important;
 }
@@ -52,21 +53,31 @@ html:is([kempt-hide-music], [kempt-hide-mixes], [kempt-hide-shorts])
 /* ------------------------------------------------------------------ */
 /* Music — YouTube's own note icon on the duration badge (12px and     */
 /* 24px paths), official artist channels, album playlists, the sidebar */
-/* links, plus whatever js/content.js marks                            */
+/* links, plus whatever js/content.js marks. Not on the History page   */
+/* (html[tidy-on-history]): it lists what you watched, and hiding     */
+/* most of it keeps YouTube loading more forever                       */
 /* ------------------------------------------------------------------ */
-html[kempt-hide-music] :is(ytd-rich-item-renderer, yt-lockup-view-model, ytd-video-renderer, ytd-compact-video-renderer):has(path[d^="M5.5 1.383V6.88"], path[d^="M11 2.766v10.99"], .badge-style-type-verified-artist, [aria-label="Official Artist Channel"], a[href*="list=OLAK5uy_"]),
-html[kempt-hide-music] :is(ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer):has(a[href*="music.youtube.com"], a[href="/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ"]),
-html[kempt-hide-music] [data-kempt-music] {
+html[tidy-hide-music]:not([tidy-on-history]) :is(ytd-rich-item-renderer, yt-lockup-view-model, ytd-video-renderer, ytd-compact-video-renderer):has(path[d^="M5.5 1.383V6.88"], path[d^="M11 2.766v10.99"], .badge-style-type-verified-artist, [aria-label="Official Artist Channel"], a[href*="list=OLAK5uy_"]),
+html[tidy-hide-music] :is(ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer):has(a[href*="music.youtube.com"], a[href="/channel/UC-9-kyTW8ZkZNDHQJ6FgpwQ"]),
+html[tidy-hide-music]:not([tidy-on-history]) [data-tidy-music] {
   display: none !important;
 }
 
 /* ------------------------------------------------------------------ */
 /* Mixes — feed, search, watch sidebar, end-of-video wall              */
 /* ------------------------------------------------------------------ */
-html[kempt-hide-mixes] :is(ytd-rich-item-renderer, yt-lockup-view-model, ytd-compact-video-renderer):has(a[href*="list=RD"], a[href*="start_radio=1"]),
-html[kempt-hide-mixes] :is(ytd-radio-renderer, ytd-compact-radio-renderer),
-html[kempt-hide-mixes] .ytp-videowall-still[data-is-mix="true"],
-html[kempt-hide-mixes] [data-kempt-mix] {
+html[tidy-hide-mixes]:not([tidy-on-history]) :is(ytd-rich-item-renderer, yt-lockup-view-model, ytd-compact-video-renderer):has(a[href*="list=RD"], a[href*="start_radio=1"]),
+html[tidy-hide-mixes] :is(ytd-radio-renderer, ytd-compact-radio-renderer),
+html[tidy-hide-mixes] .ytp-videowall-still[data-is-mix="true"],
+html[tidy-hide-mixes]:not([tidy-on-history]) [data-tidy-mix] {
+  display: none !important;
+}
+
+/* ------------------------------------------------------------------ */
+/* Your Filters categories with "Hide while browsing" (filters.html).   */
+/* Not on the History page, which shows everything you watched         */
+/* ------------------------------------------------------------------ */
+html[tidy-hide-junk]:not([tidy-on-history]) [data-tidy-junk] {
   display: none !important;
 }
 
@@ -74,27 +85,27 @@ html[kempt-hide-mixes] [data-kempt-mix] {
 /* Shorts — feed, search, watch sidebar, channel tabs, notifications,  */
 /* search chips, and the sidebar links                                 */
 /* ------------------------------------------------------------------ */
-html[kempt-hide-shorts] :is(ytd-reel-shelf-renderer, ytd-rich-shelf-renderer[is-shorts]),
-html[kempt-hide-shorts] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
-html[kempt-hide-shorts] grid-shelf-view-model:has(a[href^="/shorts/"]),
-html[kempt-hide-shorts] :is(ytd-rich-item-renderer, ytd-video-renderer, ytd-compact-video-renderer):has(a[href^="/shorts/"]),
-html[kempt-hide-shorts] :is(ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer):has(a[title="Shorts"], a[href^="/shorts"]),
-html[kempt-hide-shorts] yt-tab-shape[tab-title="Shorts"],
-html[kempt-hide-shorts] ytd-notification-renderer:has(> a[href^="/shorts/"]),
-html[kempt-hide-shorts] [data-kempt-shorts] {
+html[tidy-hide-shorts] :is(ytd-reel-shelf-renderer, ytd-rich-shelf-renderer[is-shorts]),
+html[tidy-hide-shorts] ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+html[tidy-hide-shorts] grid-shelf-view-model:has(a[href^="/shorts/"]),
+html[tidy-hide-shorts] :is(ytd-rich-item-renderer, ytd-video-renderer, ytd-compact-video-renderer):has(a[href^="/shorts/"]),
+html[tidy-hide-shorts] :is(ytd-guide-entry-renderer, ytd-mini-guide-entry-renderer):has(a[title="Shorts"], a[href^="/shorts"]),
+html[tidy-hide-shorts] yt-tab-shape[tab-title="Shorts"],
+html[tidy-hide-shorts] ytd-notification-renderer:has(> a[href^="/shorts/"]),
+html[tidy-hide-shorts] [data-tidy-shorts] {
   display: none !important;
 }
 
 /* ------------------------------------------------------------------ */
-/* YouTube's ⋮ menu (js/ytmenu.js) stays invisible while kempt uses it, */
+/* YouTube's ⋮ menu (js/ytmenu.js) stays invisible while Tidy Tube uses it, */
 /* and cards it answered ("Video removed" notices from Not interested,  */
 /* entries removed from history) stay hidden                           */
 /* ------------------------------------------------------------------ */
-html[kempt-busy] ytd-popup-container tp-yt-iron-dropdown {
+html[tidy-busy] ytd-popup-container tp-yt-iron-dropdown {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-[data-kempt-told],
-[data-kempt-removed] {
+[data-tidy-told],
+[data-tidy-removed] {
   display: none !important;
 }

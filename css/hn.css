@@ -1,7 +1,7 @@
 /*
- * Hacker News page (hn.html): kempt's own arm of YouTube, built to
+ * Hacker News page (hn.html): Tidy Tube's own arm of YouTube, built to
  * design/DESIGN.md. Every colour, size and radius that the design names comes
- * from design/tokens.css (scoped to .kempt-hn, which is <body> here); this file
+ * from design/tokens.css (scoped to .tidy-hn, which is <body> here); this file
  * only adds layout and the few values the spec states outright in pixels.
  */
 
@@ -26,7 +26,7 @@ html {
   color-scheme: dark;
 }
 
-.kempt-hn {
+.tidy-hn {
   margin: 0;
   min-height: 100vh;
   background: var(--color-bg);
@@ -35,11 +35,11 @@ html {
   -webkit-font-smoothing: antialiased;
 }
 
-:where(.kempt-hn) a {
+:where(.tidy-hn) a {
   color: inherit;
   text-decoration: none;
 }
-:where(.kempt-hn) button {
+:where(.tidy-hn) button {
   margin: 0;
   padding: 0;
   border: 0;
@@ -48,16 +48,16 @@ html {
   font: inherit;
   cursor: pointer;
 }
-:where(.kempt-hn) svg {
+:where(.tidy-hn) svg {
   display: block;
   flex: none;
   fill: currentColor;
 }
-.kempt-hn :focus-visible {
+.tidy-hn :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
-.kempt-hn [hidden] {
+.tidy-hn [hidden] {
   display: none !important;
 }
 
@@ -66,7 +66,7 @@ html {
 }
 
 /* ------------------------------------------------------------------ */
-/* kempt's thin bar: back to YouTube, and the other views              */
+/* Tidy Tube's thin bar: back to YouTube, and the other views              */
 /* ------------------------------------------------------------------ */
 
 .bar {

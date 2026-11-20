@@ -1,7 +1,7 @@
 /*
  * Hacker News page (hn.html), built to design/DESIGN.md.
  *
- * kempt's own page beside YouTube, opened from the sidebar entry.
+ * Tidy Tube's own page beside YouTube, opened from the sidebar entry.
  * Views (URL hash, so Back and reload keep your place):
  *   #browse?cat=&t=&up=&ty=&du=&gems=&ever=&sort=
  *                      the design's page: category pills, filters, Sort, grid,
@@ -24,9 +24,8 @@
   "use strict";
 
   const view = document.getElementById("view");
-  const settings = { hide_music: true };
-  const store =
-    chrome.storage && chrome.storage.sync ? chrome.storage.sync : chrome.storage.local;
+  // music stays out of this page while your Music filter hides it (js/junk.js)
+  const settings = { hide_music: false };
 
   const PAGE = 24;
   const PILLS = 6; // "All" + the largest 6 categories, the rest under More
@@ -548,7 +547,7 @@
     input.setAttribute("aria-haspopup", "listbox");
     input.setAttribute("aria-autocomplete", "list");
     input.setAttribute("aria-expanded", "false");
-    input.setAttribute("aria-controls", "kempt-pop");
+    input.setAttribute("aria-controls", "tidy-pop");
     const kbd = el("span", "kbd");
     kbd.append(el("span", "k-slash", "/"), el("span", "k-esc", "esc"));
     form.append(input, kbd);
@@ -613,7 +612,7 @@
     more.type = "button";
     more.setAttribute("aria-haspopup", "listbox");
     more.setAttribute("aria-expanded", String(!!B.popOpen));
-    more.setAttribute("aria-controls", "kempt-pop");
+    more.setAttribute("aria-controls", "tidy-pop");
     more.append(el("span", null, "More"), icon("chevron", "chev"));
     more.addEventListener("click", () => {
       if (B.popOpen) {
@@ -744,7 +743,7 @@
 
   function buildPop() {
     const pop = el("div", "pop");
-    pop.id = "kempt-pop";
+    pop.id = "tidy-pop";
     pop.setAttribute("role", "dialog");
     pop.setAttribute("aria-label", "Categories and topics");
     if ("popover" in HTMLElement.prototype) pop.setAttribute("popover", "manual");
@@ -1079,14 +1078,14 @@
   // the last draw per mode survives going to YouTube and coming Back
   function cached(mode) {
     try {
-      return JSON.parse(sessionStorage.getItem("kempt-draw-" + mode));
+      return JSON.parse(sessionStorage.getItem("tidy-draw-" + mode));
     } catch (e) {
       return null;
     }
   }
   function remember(mode, items) {
     try {
-      sessionStorage.setItem("kempt-draw-" + mode, JSON.stringify(items));
+      sessionStorage.setItem("tidy-draw-" + mode, JSON.stringify(items));
     } catch (e) {
       // storage unavailable: just draw again next time
     }
@@ -1336,7 +1335,7 @@
 
   // keep your scroll position when coming Back from a video
   function scrollKey() {
-    return "kempt-scroll-" + location.hash;
+    return "tidy-scroll-" + location.hash;
   }
   let restoring = true;
   function restoreScroll() {
@@ -1392,8 +1391,8 @@
     }
   });
 
-  store.get(settings, (got) => {
-    Object.assign(settings, got);
+  globalThis.tidyJunk.ready.then(() => {
+    settings.hide_music = globalThis.tidyJunk.hidden("music");
     render(false);
   });
 })();

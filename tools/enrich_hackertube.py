@@ -35,7 +35,7 @@ import build_hackertube as bh  # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, "..", "data", "hackertube.json")
 CACHE_DIR = os.path.join(HERE, ".cache")
-UA = {"User-Agent": "kempt-build"}
+UA = {"User-Agent": "tidy-build"}
 FLAGS, STORY, POINTS, COMMENTS, VIEWS, DUR, PUB, LIKES = 14, 15, 16, 17, 18, 19, 20, 21
 WIDTH = 22
 

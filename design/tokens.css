@@ -1,13 +1,13 @@
 /*
- * kempt — HN video subpage design tokens
+ * Tidy Tube — HN video subpage design tokens
  * Source of truth: Paper file "Hackertube++" (Mockup page).
  * Exported from Paper tokens; semantic aliases at the bottom are additions
  * that name how the mockup actually uses the base tokens.
  *
- * Scoped to .kempt-hn so nothing leaks into YouTube's own styles.
+ * Scoped to .tidy-hn so nothing leaks into YouTube's own styles.
  */
 
-.kempt-hn {
+.tidy-hn {
   /* ── Color (dark, "instrument black × amber LED") ── */
   --color-bg: #0E0E0F;        /* page ground */
   --color-surface: #18181A;   /* inputs, search bar */

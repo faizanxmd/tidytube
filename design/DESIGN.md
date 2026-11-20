@@ -1,6 +1,6 @@
-# kempt — Hacker News video subpage
+# Tidy Tube — Hacker News video subpage
 
-Design spec for the HN video page inside kempt. Source of truth is the Paper file
+Design spec for the HN video page inside Tidy Tube. Source of truth is the Paper file
 **Hackertube++ → Mockup page**:
 
 | Artboard | What it shows |
@@ -17,7 +17,7 @@ Tokens live in `tokens.css` (same folder). Use the variables; never hard-code th
 
 - This page renders **inside YouTube** as a subpage. YouTube supplies its own masthead,
   sidebar and global search. **Do not build a sidebar or a global video search.**
-- Everything is scoped under a root element with class `kempt-hn` so tokens and styles
+- Everything is scoped under a root element with class `tidy-hn` so tokens and styles
   never leak into YouTube's DOM.
 - Dark only (matches YouTube dark theme). Font: **Geist** / **Geist Mono**.
 - YouTube controls the available width (its sidebar can open/close), so the layout must be
@@ -26,7 +26,7 @@ Tokens live in `tokens.css` (same folder). Use the variables; never hard-code th
 ## 2. Page structure (top → bottom)
 
 ```
-.kempt-hn  (padding: 32px 40px 0; vertical gap 24px)
+.tidy-hn  (padding: 32px 40px 0; vertical gap 24px)
 ├── Page header        [HN badge + "Hacker News"] [Topic search — fills remaining width] [Sort]
 ├── Category pills     All · top 6 categories · More ▾
 ├── Filter bar         Uploaded ▾ · Type ▾ · Duration ▾ | ☐ Hidden gems ☐ Evergreen only ······ Clear filters
@@ -111,7 +111,7 @@ you can continue you work done, If you have any suggestions and changes which yo
 
 **Observed (user screenshot, YouTube dark theme, sidebar EXPANDED):**
 - YouTube's expanded left guide shows `Home`, then a divider, then the `Subscriptions >` header.
-- kempt's injected entry points — a **compass (Explore) icon** and an **"HN" label** — render
+- Tidy Tube's injected entry points — a **compass (Explore) icon** and an **"HN" label** — render
   **inline in the same row as `Subscriptions >`**, crammed to the right of the chevron.
 - A channel-name tooltip ("Aidan Hall") is also floating over the `Home` item while the guide is expanded.
 
@@ -123,7 +123,7 @@ state-aware: YouTube renders different containers for collapsed vs. expanded
 resize, SPA navigation via `yt-navigate-finish`) re-renders them.
 
 **Required behaviour:**
-- Exactly **one** kempt entry point per sidebar state, in the correct container:
+- Exactly **one** Tidy Tube entry point per sidebar state, in the correct container:
   - *Collapsed (mini-guide):* an icon + short label tile, styled like YouTube's own mini-guide tiles.
   - *Expanded (guide):* a full-width row (icon + "Hacker News") in its own section or directly under
     YouTube's primary entries — never inside or beside a section header.

@@ -1,18 +1,17 @@
 /*
- * kempt content script.
+ * Tidy Tube content script.
  *
  * Runs at document_start. Two responsibilities:
  *   1. Mirror settings from chrome.storage as presence-attributes on <html>
  *      so css/content.css can hide things declaratively (no flicker).
- *   2. Mark what CSS cannot identify: videos, shelves and chips that are only
- *      recognisable by their text.
+ *   2. Mark what CSS cannot identify: videos your filters match (js/junk.js),
+ *      and shelves and chips only recognisable by their text.
  */
 (() => {
   "use strict";
 
+  // Music and Mixes hiding come from your filters (js/junk.js sets those attributes)
   const DEFAULTS = {
-    hide_music: true,
-    hide_mixes: true,
     hide_shorts: true,
     show_hn: true,
   };
@@ -24,7 +23,7 @@
   const store =
     chrome.storage && chrome.storage.sync ? chrome.storage.sync : chrome.storage.local;
 
-  const attrName = (key) => "kempt-" + key.replace(/_/g, "-");
+  const attrName = (key) => "tidy-" + key.replace(/_/g, "-");
 
   function applySetting(key, on) {
     html.toggleAttribute(attrName(key), !!on);
@@ -34,68 +33,64 @@
   /* Text detection (English titles, best effort)                      */
   /* ---------------------------------------------------------------- */
 
-  const MUSIC_TITLE = new RegExp(
-    [
-      "\\bofficial\\s+(?:(?:music|lyrics?|hd|4k)\\s+)*(?:video|audio|visuali[sz]er)\\b",
-      "\\b(?:music|lyrics?)\\s+video\\b",
-      "[(\\[]lyrics?[)\\]]",
-      "\\bvideo\\s+songs?\\b",
-      "\\bfull\\s+(?:album|songs?)\\b",
-      "\\bgreatest\\s+hits\\b",
-      "\\bjukebox\\b",
-      "\\b(?:songs?|music|hits)\\b.*\\b(?:playlist|mix|nonstop|compilation)\\b",
-      "\\b(?:playlist|mix|nonstop|compilation)\\b.*\\b(?:songs?|music|hits)\\b",
-      "\\bplaylist\\s+mix\\b",
-      "\\b(?:old|best|top|hit|new|love|romantic|sad)\\s+(?:\\w+\\s+)?songs\\b",
-      "\\b\\d+\\s*hours?\\b.*\\b(?:songs?|music)\\b",
-      "\\b\\d0s\\b.*\\b(?:songs?|music|hits)\\b",
-    ].join("|"),
-    "i"
-  );
   const MUSIC_SHELF = /\b(?:music|albums?|songs?)\b/i;
   const MIX_TITLE = /\bmix(?:es)?\b/i;
 
-  // YouTube's auto-generated "Artist - Topic" channels carry album tracks,
-  // which is how songs played in YT Music show up on YouTube
-  const CHANNEL_NAMES = "ytd-channel-name, .ytContentMetadataViewModelMetadataText";
-  function fromTopicChannel(card) {
-    for (const n of card.querySelectorAll(CHANNEL_NAMES)) {
-      if (/ - Topic$/.test(n.textContent.trim())) return true;
-    }
-    return false;
-  }
-
   const CARDS =
     "ytd-rich-item-renderer, yt-lockup-view-model, ytd-video-renderer, ytd-compact-video-renderer";
+  const SHELVES = "ytd-rich-section-renderer";
+  const CHIPS = "yt-chip-cloud-chip-renderer, chip-view-model";
+  const ANY = [CARDS, SHELVES, CHIPS].join(",");
 
-  // YouTube recycles card elements in place, so every pass re-decides each
-  // one rather than remembering it. Toggling attributes doesn't trip the
-  // childList observer below.
-  function scan() {
-    for (const card of document.querySelectorAll(CARDS)) {
-      const title = card.querySelector("#video-title, h3");
+  // YouTube recycles elements in place, so each one is re-decided whenever
+  // anything inside it changes rather than remembered. Toggling attributes
+  // doesn't trip the childList observer below.
+  function decide(e) {
+    if (e.matches(CARDS)) {
+      // your filters (js/junk.js): music and Mixes only text gives away, and
+      // anything a category with Hide matches
+      const junk = globalThis.tidyJunk;
+      if (!junk) return;
+      e.toggleAttribute("data-tidy-music", junk.musicByText(e));
+      e.toggleAttribute("data-tidy-mix", junk.mixByText(e));
+      e.toggleAttribute("data-tidy-junk", junk.hides(e));
+    } else if (e.matches(SHELVES)) {
+      const title = e.querySelector("#title");
       const text = title ? title.textContent : "";
-      card.toggleAttribute("data-kempt-music", MUSIC_TITLE.test(text) || fromTopicChannel(card));
-      // user-made playlists named "mix" have no list=RD for the CSS to catch
-      card.toggleAttribute(
-        "data-kempt-mix",
-        MIX_TITLE.test(text) && !!card.querySelector('a[href*="list="]')
-      );
+      e.toggleAttribute("data-tidy-music", MUSIC_SHELF.test(text));
+      e.toggleAttribute("data-tidy-mix", MIX_TITLE.test(text));
+    } else {
+      const text = e.textContent.trim();
+      e.toggleAttribute("data-tidy-music", /^music$/i.test(text));
+      e.toggleAttribute("data-tidy-mix", /^mix(?:es)?$/i.test(text));
+      e.toggleAttribute("data-tidy-shorts", /^shorts$/i.test(text));
     }
-    for (const shelf of document.querySelectorAll("ytd-rich-section-renderer")) {
-      const title = shelf.querySelector("#title");
-      const text = title ? title.textContent : "";
-      shelf.toggleAttribute("data-kempt-music", MUSIC_SHELF.test(text));
-      shelf.toggleAttribute("data-kempt-mix", MIX_TITLE.test(text));
+  }
+
+  // Pages like History grow to thousands of cards, so after the first pass
+  // only what changed is re-decided: the cards around each mutation (a card
+  // nested in another marks both) and any cards inside what was added.
+  function scan(touched, added) {
+    const todo = new Set();
+    if (!touched) {
+      for (const e of document.querySelectorAll(ANY)) todo.add(e);
+    } else {
+      for (const n of touched) {
+        if (!n.isConnected) continue;
+        for (let e = n.closest(ANY); e; e = e.parentElement && e.parentElement.closest(ANY)) todo.add(e);
+        if (added.has(n)) for (const e of n.querySelectorAll(ANY)) todo.add(e);
+      }
     }
-    for (const chip of document.querySelectorAll("yt-chip-cloud-chip-renderer, chip-view-model")) {
-      const text = chip.textContent.trim();
-      chip.toggleAttribute("data-kempt-music", /^music$/i.test(text));
-      chip.toggleAttribute("data-kempt-mix", /^mix(?:es)?$/i.test(text));
-      chip.toggleAttribute("data-kempt-shorts", /^shorts$/i.test(text));
-    }
-    // js/guide.js and js/tell.js re-check after every pass
-    window.dispatchEvent(new Event("kempt-scan"));
+    for (const e of todo) decide(e);
+    // js/guide.js, js/tell.js and js/history.js re-check after every pass
+    window.dispatchEvent(new Event("tidy-scan"));
+  }
+
+  // the History page shows what you watched, music included (hiding it there
+  // also left YouTube's "load more" spinner on screen, so it never stopped
+  // loading); css/content.css keys off this
+  function markPage() {
+    html.toggleAttribute("tidy-on-history", location.pathname === "/feed/history");
   }
 
   /* ---------------------------------------------------------------- */
@@ -113,19 +108,38 @@
   });
 
   function startObserving() {
-    // Debounced full-page scan; new cards arrive constantly while scrolling
+    // Debounced scan of what changed; new cards arrive constantly while scrolling
     let scheduled = false;
-    new MutationObserver(() => {
+    let touched = new Set(); // where something changed
+    let added = new Set(); // new subtrees, which are looked inside as well
+    new MutationObserver((records) => {
+      for (const r of records) {
+        if (r.target.nodeType === 1) touched.add(r.target);
+        for (const n of r.addedNodes) {
+          if (n.nodeType !== 1) continue;
+          touched.add(n);
+          added.add(n);
+        }
+      }
       if (scheduled) return;
       scheduled = true;
       setTimeout(() => {
         scheduled = false;
-        scan();
+        const t = touched, a = added;
+        touched = new Set();
+        added = new Set();
+        scan(t, a);
       }, 100);
     }).observe(document.body, { childList: true, subtree: true });
 
     // YouTube is a single-page app; this event fires on every route change
-    window.addEventListener("yt-navigate-finish", scan);
+    window.addEventListener("yt-navigate-finish", () => {
+      markPage();
+      scan();
+    });
+    // js/junk.js loaded or changed your filters
+    window.addEventListener("tidy-filters", () => scan());
+    markPage();
     scan();
   }
 

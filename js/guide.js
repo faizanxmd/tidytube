@@ -1,9 +1,9 @@
 /*
- * kempt: the "Hacker News" entry in YouTube's sidebar.
+ * Tidy Tube: the "Hacker News" entry in YouTube's sidebar.
  *
  * Adds one entry to each of YouTube's two sidebars (a full-width row under the
  * primary entries in the full guide, an icon tile in the collapsed mini guide)
- * that opens kempt's own Hacker News page (hn.html) in the same tab;
+ * that opens Tidy Tube's own Hacker News page (hn.html) in the same tab;
  * Ctrl/Cmd or middle click opens it in a new tab. Also tells the background
  * which catalogued videos you watch, so the Hacker News page can learn your taste. No
  * other UI is added to YouTube's pages.
@@ -63,8 +63,8 @@
   function entry(kind) {
     const k = KINDS[kind];
     const a = document.createElement("a");
-    a.className = k.mini ? "kempt-guide kempt-guide-mini" : "kempt-guide";
-    a.dataset.kemptGuide = kind;
+    a.className = k.mini ? "tidy-guide tidy-guide-mini" : "tidy-guide";
+    a.dataset.tidyGuide = kind;
     a.href = chrome.runtime.getURL("hn.html");
     // no title attribute: the label is on screen, and a native tooltip would
     // outlive the sidebar switching modes under the pointer
@@ -100,13 +100,13 @@
   function ensureOne(kind) {
     const k = KINDS[kind];
     const host = document.querySelector(k.host);
-    const mine = host ? [...host.querySelectorAll(".kempt-guide")] : [];
+    const mine = host ? [...host.querySelectorAll(".tidy-guide")] : [];
     const list = host && host.querySelector(k.list);
     // drop anything that isn't the single, correctly placed entry: copies,
     // and entries stranded where an earlier layout put them
     let keep = null;
     for (const e of mine) {
-      if (!keep && list && e.parentElement === list && e.dataset.kemptGuide === kind) keep = e;
+      if (!keep && list && e.parentElement === list && e.dataset.tidyGuide === kind) keep = e;
       else e.remove();
     }
     if (!list) return;
@@ -117,7 +117,7 @@
   }
 
   function removeAll() {
-    for (const e of document.querySelectorAll(".kempt-guide")) e.remove();
+    for (const e of document.querySelectorAll(".tidy-guide")) e.remove();
   }
 
   // one entry per sidebar, re-checked on every YouTube navigation and page scan
@@ -128,7 +128,7 @@
       return;
     }
     // other tabs' strays too: any entry outside the two sidebars goes
-    for (const e of document.querySelectorAll(".kempt-guide")) {
+    for (const e of document.querySelectorAll(".tidy-guide")) {
       if (!e.closest("ytd-guide-renderer, ytd-mini-guide-renderer")) e.remove();
     }
     for (const kind of Object.keys(KINDS)) ensureOne(kind);
@@ -139,7 +139,7 @@
     stopped = true;
     removeAll();
     window.removeEventListener("yt-navigate-finish", tick);
-    window.removeEventListener("kempt-scan", tick);
+    window.removeEventListener("tidy-scan", tick);
   }
 
   // watches of catalogued videos teach the Hacker News page (others are ignored there)
@@ -164,5 +164,5 @@
 
   window.addEventListener("yt-navigate-finish", tick);
   // js/content.js fires this after each debounced scan of the page
-  window.addEventListener("kempt-scan", tick);
+  window.addEventListener("tidy-scan", tick);
 })();

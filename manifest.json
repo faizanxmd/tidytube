@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "kempt",
-  "short_name": "kempt",
-  "description": "Hide music, Mixes and Shorts from YouTube, tell it to stop sending them, and browse what Hacker News recommends instead.",
-  "version": "0.8.0",
+  "name": "Tidy Tube",
+  "short_name": "Tidy Tube",
+  "description": "Hide music, Mixes and Shorts from YouTube, filter out your own junk and clean it from your history, and browse what Hacker News recommends instead.",
+  "version": "0.11.0",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -13,7 +13,7 @@
   "action": {
     "default_icon": "icons/icon-128.png",
     "default_popup": "popup.html",
-    "default_title": "kempt"
+    "default_title": "Tidy Tube"
   },
   "permissions": [
     "storage"
@@ -29,6 +29,7 @@
       ],
       "js": [
         "js/content.js",
+        "js/junk.js",
         "js/guide.js",
         "js/ytmenu.js",
         "js/tell.js",
@@ -39,5 +40,9 @@
   ],
   "background": {
     "service_worker": "js/background.js"
+  },
+  "options_ui": {
+    "page": "filters.html",
+    "open_in_tab": true
   }
 }

@@ -1,0 +1,259 @@
+/*
+ * Tidy Tube Filters page (filters.html): the popup's look (css/popup.css)
+ * at page size. Dark only, like the popup.
+ */
+@font-face {
+  font-family: "Inter";
+  font-weight: 100 900;
+  src: url("../fonts/inter.ttf") format("truetype");
+}
+
+:root {
+  --base: #0e1014;
+  --raised: #181b21;
+  --overlay: #262a32;
+  --overlay-hover: #2e333c;
+  --line: #2a2e36;
+  --ink: #f4f5f8;
+  --muted: #a4a8b0;
+  --accent: #0f1e66;
+  --accent-hover: #142680;
+  --danger: #ff8a80;
+  --radius: 6px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--base);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 40px 16px 64px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+h2 {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+b { font-weight: 600; }
+code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--overlay);
+  font-size: 12.5px;
+}
+
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.lead { max-width: 600px; margin: 0; color: var(--muted); }
+
+.legend { margin: 12px 0 0; display: grid; gap: 4px; }
+.legend div { display: flex; gap: 10px; }
+.legend dt {
+  flex: none;
+  width: 64px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.legend dd { margin: 0; color: var(--muted); }
+.legend b { color: var(--ink); }
+.saved { flex: none; padding-top: 10px; color: var(--muted); font-size: 13px; }
+
+/* ── a category ─────────────────────────────────────────────────── */
+
+.card {
+  border-radius: var(--radius);
+  background: var(--raised);
+}
+.card + .card { margin-top: 8px; }
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 8px 8px 6px;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+}
+.name:hover { border-color: var(--line); }
+.name:focus { outline: none; border-color: var(--muted); background: var(--base); }
+
+.count { flex: none; color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+/* small on/off pills: navy when on, like the popup's tiles */
+.switch {
+  flex: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+  background: var(--overlay);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.switch:hover { background: var(--overlay-hover); }
+.switch input { position: absolute; opacity: 0; pointer-events: none; }
+.switch:has(input:checked) { background: var(--accent); color: var(--ink); }
+.switch:has(input:checked):hover { background: var(--accent-hover); }
+.switch:has(input:focus-visible) { outline: 2px solid var(--ink); outline-offset: 2px; }
+.switch:has(input:disabled) { opacity: 0.4; cursor: default; }
+
+.more {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.more:hover { background: var(--overlay); color: var(--ink); }
+.more svg { width: 20px; height: 20px; fill: currentColor; transition: transform 0.15s; }
+.more[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+.body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  padding: 4px 16px 16px;
+}
+.body[hidden] { display: none; }
+
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.label { color: var(--muted); font-size: 12px; font-weight: 600; }
+
+textarea {
+  width: 100%;
+  height: 220px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--base);
+  color: var(--ink);
+  font: 13px/20px ui-monospace, "SF Mono", Menlo, monospace;
+  resize: vertical;
+}
+textarea:focus { outline: none; border-color: var(--muted); }
+
+.error { color: var(--danger); font-size: 12px; line-height: 17px; }
+
+.builtin {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.delete { grid-column: 1 / -1; justify-self: start; }
+
+/* ── page actions ───────────────────────────────────────────────── */
+
+.add {
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin-top: 8px;
+  border: 1px dashed var(--overlay-hover);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.add:hover { background: var(--raised); }
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.link:hover { color: var(--ink); text-decoration: underline; }
+.link.danger:hover { color: var(--danger); }
+
+.help, .tester { margin-top: 40px; }
+.help p { max-width: 640px; margin: 0 0 8px; color: var(--muted); }
+.help b { color: var(--ink); }
+
+.tester-row { display: flex; gap: 8px; }
+.tester input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+}
+.tester input:focus { outline: none; border-color: var(--muted); }
+.tester-out { margin: 10px 2px 0; color: var(--muted); }
+.tester-out b { color: var(--ink); }
+
+.foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); }
+
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .legend div { flex-direction: column; gap: 0; }
+  .top { flex-direction: column; gap: 8px; }
+  .head { flex-wrap: wrap; }
+  .name { flex-basis: 100%; }
+  .count { margin-right: auto; padding-left: 10px; }
+  .body { grid-template-columns: 1fr; }
+  .tester-row { flex-direction: column; }
+}
+
+/* a category with every switch off does nothing */
+.card.idle .name { color: var(--muted); }

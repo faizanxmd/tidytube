@@ -1,54 +1,45 @@
-# kempt
+# Tidy Tube
 
-*(adj.) — neatly kept, tidy. From Old English "cemban", to comb. Your feed, combed.*
+Clean YouTube up your way: decide what counts as junk, then clear it out of
+your watch history, hide it, or tell YouTube you're not interested. It also
+adds a page of videos Hacker News keeps recommending.
 
-Hides music, Mixes and Shorts from YouTube, tells YouTube to stop sending them,
-and fills the gap with videos Hacker News keeps recommending.
+## Filters
 
-## What it hides
+The Filters page (popup → *Edit filters*, or the extension's Options) holds
+categories. Each is a list of channels (name or @handle) and title words
+(`*` for any letters, `/regex/` for anything fancier), with three switches:
 
-- **Music** — videos YouTube itself tags with a ♪ on the duration badge, Official
-  Artist Channels, auto-generated "Artist - Topic" channels, album playlists, music shelves and chips, and the Music links in
-  YouTube's sidebar. As a fallback, anything whose title reads as music ("Official
-  Music Video", "Full Album", "Songs Playlist"...); that part is English-only and
-  best effort.
-- **Mixes** — radio and Mix playlists (`list=RD...`, `start_radio=1`) in the feed,
-  search, watch sidebar and end-of-video wall, plus Mix shelves and chips.
-- **Shorts** — in the feed, search, watch sidebar, channel tabs, notifications and
-  YouTube's sidebar.
+- **History**: *Clean up history*, a button on YouTube's History page, removes
+  matching entries via each one's ⋮ → Remove from watch history, loading more
+  as it goes, up to 300 a run, stoppable. Removing from history is a stronger
+  signal than "Not interested", and it takes the video out of what YouTube
+  recommends from (YT Music shares the same history). Videos Hacker News
+  recommends are never removed. Nothing happens unless you press it.
+- **Hide**: kept out of Home, search and the sidebar beside videos. The feed is
+  re-laid as a dense grid, so hidden cards don't leave holes. The History page
+  itself always shows everything.
+- **Tell**: on Home and in the sidebar beside videos, Tidy Tube opens YouTube's
+  own ⋮ menu on matching cards and picks "Not interested", as you would by
+  hand: at most 6 per page, a few seconds apart, never the same video twice,
+  with the menu kept invisible.
 
-Each one toggles from the popup and applies to open tabs immediately. The feed
-is re-laid as a dense grid while anything is hidden, so hidden cards don't leave holes.
+**Music** and **Mixes** are built-in categories: besides your lists they catch
+what YouTube itself marks as music (the ♪ on the duration badge, artist and
+"Artist - Topic" channels, albums, music shelves and chips, English titles like
+"Official Music Video") and Mix playlists. It also starts with politics and news,
+late-night shows, TV clips, Aayu and Pihu, and Taarak Mehta, all set to History
+only. Changes apply to open tabs at once. The rules live in `js/junk.js`.
 
-## Send YouTube the right signals
+**Shorts** is a plain switch in the popup: hidden in the feed, search, watch
+sidebar, channel tabs, notifications and YouTube's sidebar.
 
-YouTube learns from what you subscribe to, watch, like and search for, and
-from what you remove or reject. YT Music shares the same watch history, so
-every song played there tells YouTube you want music. kempt pushes the other way:
-
-- **Tell YouTube** (popup toggle): on Home and in the sidebar beside videos,
-  kempt opens YouTube's own ⋮ menu on music and Mix cards it hid and picks "Not
-  interested", as you would by hand: at most 6 per page, a few seconds apart,
-  never the same video twice, with the menu kept invisible. It uses "Not
-  interested" (one video) rather than "Don't recommend channel" (a whole
-  artist), so it says as little as possible to YT Music.
-- **Remove music from history**: a button on YouTube's History page. After a
-  confirm, it removes entries kempt recognises as music or Mixes, via each one's
-  ⋮ → Remove from watch history, scrolling for more, up to 300 a run, stoppable.
-  Removing from history is a stronger signal than "Not interested", and it takes
-  YT Music plays out of what YouTube recommends from. Nothing happens unless you
-  press it.
-- **Channels** on the Hacker News page: the channels HN trusts most, each with *Subscribe on
-  YouTube*. Subscriptions are the strongest positive signal.
-- Hacker News videos open on youtube.com, so watching them counts, and a search with
-  no HN result offers *Search YouTube*.
-
-Both automations need a signed-in, English YouTube; they look for the menu
+History and Tell need a signed-in, English YouTube; they look for the menu
 items by name and back off when they can't find them.
 
 ## What it adds: Hacker News
 
-Hiding things alone leaves a thin feed, so kempt adds its own page beside
+Hiding things alone leaves a thin feed, so Tidy Tube adds its own page beside
 YouTube: **Hacker News**, built from [HackerTube](https://hackertube.org), the
 talks, lectures, documentaries and explainers Hacker News commenters keep
 pointing each other to. It doesn't dress up as YouTube and isn't mixed into
@@ -79,7 +70,7 @@ design spec and tokens are in `design/` (`DESIGN.md`, `tokens.css`).
   topics and the videos most like it; *Not interested* lowers them; cards you
   keep skipping fade out. All of it stays in `chrome.storage.local`. Reset it
   from the popup.
-- Music videos are left out while Music is hidden.
+- Music videos are left out while your Music filter has Hide on.
 
 The catalogue (4,636 videos after dropping news clips, never-recommended
 citations and duplicate uploads) is bundled in `data/hackertube.json`. To
@@ -98,27 +89,33 @@ happens when you build the data; the extension itself never calls out.
 
 ## How it works
 
-1. Settings live in `chrome.storage.sync` (falls back to `local`).
-2. `js/content.js` runs at `document_start` and mirrors each setting as a
-   presence-attribute on `<html>` (e.g. `<html kempt-hide-mixes>`).
+1. The popup's switches (Shorts, the sidebar entry) live in `chrome.storage.sync`
+   (falls back to `local`); your filters live in `chrome.storage.local` under
+   `tidy_filters`, edited by `filters.html` (`js/filters.js`, `css/filters.css`).
+2. `js/junk.js` turns your filters into matchers, shared by every script and
+   page, and mirrors what's hidden as presence-attributes on `<html>` (e.g.
+   `<html tidy-hide-music>`), as `js/content.js` does for the popup's switches.
 3. `css/content.css` does the hiding declaratively, so toggling is instant.
-4. `js/content.js` also marks what CSS can't recognise: titles, shelves and chips
-   that are only identifiable by their text (`data-kempt-music` / `data-kempt-mix`).
+4. `js/content.js` marks what CSS can't recognise, re-checking only the cards
+   that changed: music and Mixes known only by their text (`data-tidy-music` /
+   `data-tidy-mix`), videos a category with Hide matches (`data-tidy-junk`),
+   and shelves and chips.
 5. `js/guide.js` adds the Hacker News sidebar entry (`css/guide.css`) and notes
    which catalogued videos you watch. YouTube keeps two sidebars in the page
    and shows one (the full guide or the icon rail), so each gets exactly one
    entry of its own kind, in its own list of primary entries, re-checked on
    every navigation and page scan. `hn.html` (`js/hn.js`, `css/hn.css`, styled
    by `design/tokens.css`) is the Hacker News page; `js/background.js` filters
-   and ranks it and keeps what kempt learned.
+   and ranks it and keeps what Tidy Tube learned.
 6. `js/ytmenu.js` drives YouTube's own ⋮ menu; `js/tell.js` uses it for "Not
-   interested" and `js/history.js` for "Remove from watch history".
+   interested" (categories with Tell) and `js/history.js` for "Remove from watch
+   history" (categories with History).
 
 ## Install (Load unpacked)
 
 1. Open `chrome://extensions`.
 2. Turn on **Developer mode** (top right).
-3. Click **Load unpacked** and select this `kempt` folder.
+3. Click **Load unpacked** and select this `tidytube` folder.
 
 The bundled fonts are Inter (`fonts/OFL.txt`, popup) and Geist / Geist Mono
 (`fonts/OFL-Geist.txt`, Hacker News page), both under the SIL Open Font License.

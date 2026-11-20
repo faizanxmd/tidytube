@@ -1,5 +1,5 @@
 /*
- * kempt popup. Reads settings into the toggles, writes changes back to
+ * Tidy Tube popup. Reads settings into the toggles, writes changes back to
  * storage. The content script listens to storage.onChanged, so changes apply
  * to open YouTube tabs immediately — no reload needed.
  */
@@ -7,11 +7,8 @@
   "use strict";
 
   const DEFAULTS = {
-    hide_music: true,
-    hide_mixes: true,
     hide_shorts: true,
     show_hn: true,
-    tell_youtube: true,
   };
 
   const store =
@@ -47,6 +44,12 @@
 
   document.getElementById("hn_open").addEventListener("click", () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("hn.html") });
+    window.close();
+  });
+
+  // filters.html is the extension's options page, so this reuses its tab if open
+  document.getElementById("filters_open").addEventListener("click", () => {
+    chrome.runtime.openOptionsPage();
     window.close();
   });
 
